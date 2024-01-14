@@ -1,14 +1,14 @@
-import { env, knex, log } from "./env";
 import {
+  constants,
   Contract,
   GetTransactionReceiptResponse,
   RpcProvider,
   Uint256,
-  constants,
   num,
   uint256,
 } from "starknet";
 import { abi } from "./abi";
+import { env, knex, log } from "./env";
 import {
   EventEventIndex,
   EventInitializer,
@@ -81,25 +81,27 @@ export async function pullEvents() {
           const [eventName] = Object.keys(ParsedEvent);
           const eventContent = ParsedEvent[eventName];
 
-          const eventAbi = abi.find((entry) => entry.name === eventName)!;
+          const eventAbi = abi.find((entry) => entry.name === eventName);
 
-          eventAbi.data!.forEach((member) => {
-            if (member.type === "Uint256") {
-              eventContent[member.name] = uint256
-                .uint256ToBN(eventContent[member.name] as Uint256)
-                .toString();
+          if (eventAbi != null && eventAbi.data != null) {
+            for (const member of eventAbi.data) {
+              if (member.type === "Uint256") {
+                eventContent[member.name] = uint256
+                  .uint256ToBN(eventContent[member.name] as Uint256)
+                  .toString();
+              }
+              if (member.type === "felt") {
+                eventContent[member.name] = num
+                  .toBigInt(eventContent[member.name] as number)
+                  .toString();
+              }
+              log.debug("Parsed event member.", {
+                memberName: member.name,
+                memberType: member.type,
+                memberValue: eventContent[member.name],
+              });
             }
-            if (member.type === "felt") {
-              eventContent[member.name] = num
-                .toBigInt(eventContent[member.name] as number)
-                .toString();
-            }
-            log.debug("Parsed event member.", {
-              memberName: member.name,
-              memberType: member.type,
-              memberValue: eventContent[member.name],
-            });
-          });
+          }
 
           return {
             txHash: emittedEvent.transaction_hash as EventTxHash,
@@ -111,7 +113,7 @@ export async function pullEvents() {
             blockHash: emittedEvent.block_hash,
             createdAt: new Date(),
           } satisfies EventInitializer;
-        })
+        }),
       );
     }
 
@@ -151,9 +153,9 @@ export async function updateTransactions() {
       // "ACCEPTED_ON_L2",
     ]);
 
-  for (let transaction in transactionsToUpdate) {
+  for (const transaction in transactionsToUpdate) {
     const tx = await starknet.getTransactionReceipt(
-      transactionsToUpdate[transaction].hash
+      transactionsToUpdate[transaction].hash,
     );
 
     if ("block_hash" in tx) {

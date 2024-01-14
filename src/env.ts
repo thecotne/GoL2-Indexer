@@ -1,9 +1,9 @@
-import "./schemas/knex-tables";
 import "dotenv/config";
-import { parseEnv } from "znv";
-import { z } from "zod";
 import Knex from "knex";
 import { createLogger, format, transports } from "winston";
+import { parseEnv } from "znv";
+import { z } from "zod";
+import "./schemas/knex-tables";
 
 export const env = parseEnv(process.env, {
   DATABASE_URL: z.string(),
@@ -38,8 +38,8 @@ export const log = createLogger({
     format.splat(),
     format.printf(
       ({ timestamp, level, message, ...obj }) =>
-        `${timestamp} ${level}: ${message} ${JSON.stringify(obj, null, 2)}`
-    )
+        `${timestamp} ${level}: ${message} ${JSON.stringify(obj, null, 2)}`,
+    ),
   ),
   transports: [new transports.Console()],
 });
