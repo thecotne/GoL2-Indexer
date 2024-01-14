@@ -32,9 +32,9 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          # thecotne/gol2-indexer
           images: |
-            ghcr.io/${{ github.repository }}
+            name=thecotne/gol2-indexer,enable=false
+            name=ghcr.io/${{ github.repository }},enable=true
 
       - name: Build and push Docker images
         uses: docker/build-push-action@v5
