@@ -13,9 +13,10 @@
 - `docker compose up --build` - start the project with docker
 - `docker compose up -d` - start the project with docker in detached mode
 - `docker compose up db -d` - start the database with docker
-- `docker compose rm --stop` - stop the project with docker
-- `pnpm dotenv -- pnpm -c exec 'pgcli "$DATABASE_URL"'` - connect to the database
+- `docker compose rm --stop` - stop and remove the project with docker
+- `pnpm dotenv -- pnpm -c exec 'pgcli "$DATABASE_URL"'` - connect to the database with pgcli
 - `pnpm kanel` - update the database schema
+- `biome check --apply .` - check and format the code
 
 ## Env variables
 - `DATABASE_URL` - Database connection string
