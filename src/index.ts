@@ -1,6 +1,6 @@
+import assert from "assert";
 import { sql } from "kysely";
-import { GetTransactionReceiptResponse, Uint256, num, uint256 } from "starknet";
-import { abi } from "./abi";
+import { GetTransactionReceiptResponse } from "starknet";
 import { contract, db, env, log, starknet } from "./env";
 import { EventEventIndex, EventTxHash, NewEvent } from "./schemas/public/Event";
 
@@ -32,34 +32,47 @@ async function pullEvents() {
     ? lastEvent.blockIndex + 1
     : env.CONTRACT_BLOCK_NUMBER;
 
-  let eventsChunk = await starknet.getEvents({
-    chunk_size: 1000,
-    address: env.CONTRACT_ADDRESS,
-    from_block: {
-      block_number: blockNumber,
-    },
-  });
+  let eventsChunk: Awaited<ReturnType<typeof starknet.getEvents>> | undefined;
+  let eventsPulled = 0;
 
-  log.debug("Events chunk.", {
-    eventsChunk,
-  });
+  await db.transaction().execute(async (trx) => {
+    do {
+      eventsChunk = await starknet.getEvents({
+        chunk_size: 1000,
+        address: env.CONTRACT_ADDRESS,
+        from_block: {
+          block_number: blockNumber,
+        },
+        continuation_token: eventsChunk?.continuation_token,
+      });
 
-  log.info("Pulled events chunk.", {
-    blockNumber,
-    eventsChunkLength: eventsChunk.events.length,
-    continuationToken: eventsChunk.continuation_token,
-  });
+      assert(eventsChunk != null, "Events chunk is null.");
+      assert(typeof eventsChunk === "object", "Events chunk is not an object.");
+      assert(
+        Array.isArray(eventsChunk.events),
+        "Events chunk is not an array.",
+      );
 
-  const eventRecords: NewEvent[] = [];
+      log.debug("Events chunk.", {
+        eventsChunk,
+      });
 
-  while (eventsChunk) {
-    if (eventsChunk.events.length > 0) {
-      eventRecords.push(
-        ...eventsChunk.events.map((emittedEvent, i) => {
+      eventsPulled += eventsChunk.events.length;
+
+      log.info("Pulled events chunk.", {
+        blockNumber,
+        eventsPulled,
+        eventsChunkLength: eventsChunk.events.length,
+        continuationToken: eventsChunk.continuation_token,
+      });
+
+      if (eventsChunk.events.length > 0) {
+        const values = eventsChunk.events.map<NewEvent>((emittedEvent, i) => {
           log.debug("Parsing event.", {
             blockNumber: emittedEvent.block_number,
             transactionHash: emittedEvent.transaction_hash,
           });
+
           const [ParsedEvent] = contract.parseEvents({
             events: [emittedEvent],
           } as GetTransactionReceiptResponse);
@@ -67,25 +80,9 @@ async function pullEvents() {
           const [eventName] = Object.keys(ParsedEvent);
           const eventContent = ParsedEvent[eventName];
 
-          const eventAbi = abi.find((entry) => entry.name === eventName);
-
-          if (eventAbi != null && eventAbi.data != null) {
-            for (const member of eventAbi.data) {
-              if (member.type === "Uint256") {
-                eventContent[member.name] = uint256
-                  .uint256ToBN(eventContent[member.name] as Uint256)
-                  .toString();
-              }
-              if (member.type === "felt") {
-                eventContent[member.name] = num
-                  .toBigInt(eventContent[member.name] as number)
-                  .toString();
-              }
-              log.debug("Parsed event member.", {
-                memberName: member.name,
-                memberType: member.type,
-                memberValue: eventContent[member.name],
-              });
+          for (const [key, value] of Object.entries(eventContent)) {
+            if (typeof value === "bigint") {
+              eventContent[key] = value.toString();
             }
           }
 
@@ -93,55 +90,31 @@ async function pullEvents() {
             txHash: emittedEvent.transaction_hash as EventTxHash,
             eventIndex: i as EventEventIndex,
             blockIndex: emittedEvent.block_number,
-            name: eventName,
+            name: eventNameMap[eventName] ?? eventName,
             content: eventContent,
             txIndex: i,
             blockHash: emittedEvent.block_hash,
             createdAt: new Date(),
-          } satisfies NewEvent;
-        }),
-      );
-    }
+          };
+        });
 
-    if (eventsChunk.continuation_token) {
-      eventsChunk = await starknet.getEvents({
-        chunk_size: 1000,
-        address: env.CONTRACT_ADDRESS,
-        continuation_token: eventsChunk.continuation_token,
-      });
+        await trx.insertInto("event").values(values).execute();
 
-      log.debug("Events chunk.", {
-        eventsChunk,
-      });
-
-      log.info("Pulled events chunk.", {
-        blockNumber,
-        eventsChunkLength: eventsChunk.events.length,
-        continuationToken: eventsChunk.continuation_token,
-      });
-    } else {
-      break;
-    }
-  }
-
-  if (eventRecords.length === 0) return;
-
-  await db.transaction().execute(async (trx) => {
-    for (let i = 0; i < eventRecords.length; i += 1000) {
-      log.info("Inserting events.", {
-        from: i,
-        to: i + 1000,
-      });
-
-      await trx
-        .insertInto("event")
-        .values(eventRecords.slice(i, i + 1000))
-        .execute();
-    }
+        log.info("Inserted events chunk.");
+      }
+    } while (eventsChunk.continuation_token);
   });
 
-  await refreshMaterializedViews();
+  if (eventsPulled > 0) {
+    await refreshMaterializedViews();
+  }
 }
+
+const eventNameMap = {
+  GameCreated: "game_created",
+  GameEvolved: "game_evolved",
+  CellRevived: "cell_revived",
+} as { [key: string]: string };
 
 async function updateTransactions() {
   const transactionsToUpdate = await db

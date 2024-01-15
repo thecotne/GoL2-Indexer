@@ -21,7 +21,8 @@
 ## Env variables
 - `DATABASE_URL` - Database connection string
 - `CONTRACT_ADDRESS` - The contract address
-  - [0x06dc4bd1212e67fd05b456a34b24a060c45aad08ab95843c42af31f86c7bd093](https://testnet.starkscan.co/contract/0x06dc4bd1212e67fd05b456a34b24a060c45aad08ab95843c42af31f86c7bd093) for Goerli
+  - [0x06dc4bd1212e67fd05b456a34b24a060c45aad08ab95843c42af31f86c7bd093](https://testnet.starkscan.co/contract/0x06dc4bd1212e67fd05b456a34b24a060c45aad08ab95843c42af31f86c7bd093) for old contract on Goerli
+  - [0x077c08aed31ac023981de21e60b0bc0958a05f81943be057919c628994de86fe](https://testnet.starkscan.co/contract/0x077c08aed31ac023981de21e60b0bc0958a05f81943be057919c628994de86fe) for new contract on Goerli
   - [0x06a05844a03bb9e744479e3298f54705a35966ab04140d3d8dd797c1f6dc49d0](https://starkscan.co/contract/0x06a05844a03bb9e744479e3298f54705a35966ab04140d3d8dd797c1f6dc49d0) for Mainnet
   - 🤷‍♂️ for Sepolia
 - `STARKNET_NETWORK_NAME` - The StarkNet network name
@@ -29,7 +30,8 @@
   - `SN_GOERLI` for Goerli
   - `SN_SEPOLIA` for Sepolia
 - `CONTRACT_BLOCK_NUMBER` - The block number at which the contract was deployed
-  - `267275` for Goerli
+  - `267275` for old contract on Goerli
+  - `921928` for new contract on Goerli
   - `4982` for Mainnet
   - 🤷‍♂️ for Sepolia
 

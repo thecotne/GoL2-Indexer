@@ -1,5 +1,6 @@
 {
   "private": true,
+  "type": "module",
   "name": "gol2-indexer",
   "version": "0.0.0-source",
   "bin": "./dist/index.js",

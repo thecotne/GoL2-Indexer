@@ -1,11 +1,16 @@
 import "dotenv/config";
 import { Kysely, PostgresDialect } from "kysely";
-import { Pool } from "pg";
-import { Contract, RpcProvider } from "starknet";
+import pg from "pg";
+import {
+  Contract,
+  EventAbi,
+  FunctionAbi,
+  RpcProvider,
+  StructAbi,
+} from "starknet";
 import { createLogger, format, transports } from "winston";
 import { parseEnv } from "znv";
 import { z } from "zod";
-import { abi } from "./abi";
 import PublicSchema from "./schemas/public/PublicSchema";
 
 export const env = parseEnv(process.env, {
@@ -22,11 +27,14 @@ export const starknet = new RpcProvider({
   nodeUrl: env.STARKNET_NETWORK_NAME,
 });
 
+export type Abi = Array<FunctionAbi | EventAbi | StructAbi>;
+
+export const abi = (await starknet.getClassAt(env.CONTRACT_ADDRESS)).abi as Abi;
 export const contract = new Contract(abi, env.CONTRACT_ADDRESS, starknet);
 
 export const db = new Kysely<PublicSchema>({
   dialect: new PostgresDialect({
-    pool: new Pool({
+    pool: new pg.Pool({
       connectionString: env.DATABASE_URL,
     }),
   }),
