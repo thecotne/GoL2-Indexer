@@ -115,7 +115,6 @@ WHERE (
   ) WITH NO DATA;
 CREATE TABLE public.transaction (
   hash character varying(65) NOT NULL,
-  "errorContent" jsonb,
   "blockHash" character varying(65),
   status character varying NOT NULL,
   "createdAt" timestamp without time zone DEFAULT now() NOT NULL,
