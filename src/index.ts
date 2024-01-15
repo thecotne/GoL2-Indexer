@@ -44,7 +44,9 @@ export async function pullEvents() {
     .limit(1)
     .executeTakeFirst();
 
-  const blockNumber = lastEvent ? lastEvent.blockIndex + 1 : 1;
+  const blockNumber = lastEvent
+    ? lastEvent.blockIndex + 1
+    : env.CONTRACT_BLOCK_NUMBER;
 
   let eventsChunk = await starknet.getEvents({
     chunk_size: 1000,
@@ -61,6 +63,7 @@ export async function pullEvents() {
   log.info("Pulled events chunk.", {
     blockNumber,
     eventsChunkLength: eventsChunk.events.length,
+    continuationToken: eventsChunk.continuation_token,
   });
 
   const eventRecords: NewEvent[] = [];
@@ -128,7 +131,9 @@ export async function pullEvents() {
       });
 
       log.info("Pulled events chunk.", {
+        blockNumber,
         eventsChunkLength: eventsChunk.events.length,
+        continuationToken: eventsChunk.continuation_token,
       });
     } else {
       break;
@@ -137,7 +142,19 @@ export async function pullEvents() {
 
   if (eventRecords.length === 0) return;
 
-  await db.insertInto("event").values(eventRecords).execute();
+  await db.transaction().execute(async (trx) => {
+    for (let i = 0; i < eventRecords.length; i += 1000) {
+      log.info("Inserting events.", {
+        from: i,
+        to: i + 1000,
+      });
+
+      await trx
+        .insertInto("event")
+        .values(eventRecords.slice(i, i + 1000))
+        .execute();
+    }
+  });
 
   await refreshMaterializedViews();
 }
@@ -176,7 +193,9 @@ export async function updateTransactions() {
   }
 }
 
-async function refreshMaterializedView(name: 'balance' | 'creator' | 'infinite') {
+type MaterializedViewName = "balance" | "creator" | "infinite";
+
+async function refreshMaterializedView(name: MaterializedViewName) {
   const query = sql`REFRESH MATERIALIZED VIEW CONCURRENTLY ${sql.table(name)}`;
 
   log.info("Refreshing materialized view.", { name });
@@ -187,7 +206,7 @@ async function refreshMaterializedView(name: 'balance' | 'creator' | 'infinite')
 export async function refreshMaterializedViews() {
   log.info("Refreshing all materialized views.");
 
-  await refreshMaterializedView('balance');
-  await refreshMaterializedView('creator');
-  await refreshMaterializedView('infinite');
+  await refreshMaterializedView("balance");
+  await refreshMaterializedView("creator");
+  await refreshMaterializedView("infinite");
 }

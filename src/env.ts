@@ -9,6 +9,7 @@ import Database from "./schemas/Database";
 export const env = parseEnv(process.env, {
   DATABASE_URL: z.string(),
   CONTRACT_ADDRESS: z.string(),
+  CONTRACT_BLOCK_NUMBER: z.number(),
   STARKNET_NETWORK_NAME: z.enum(["SN_MAIN", "SN_GOERLI"]),
   LOG_LEVEL: z
     .enum(["trace", "debug", "info", "warn", "error", "fatal"])
