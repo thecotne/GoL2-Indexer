@@ -32,3 +32,28 @@
   - `267275` for Goerli
   - `4982` for Mainnet
   - 🤷‍♂️ for Sepolia
+
+## Tools and libraries used
+
+- [Biome](https://biomejs.dev/) - Format, lint, and more in a fraction of a second.
+- [dbmate](https://github.com/amacneil/dbmate) - A lightweight, framework-agnostic database migration tool.
+- [Docker Compose](https://docs.docker.com/compose/) - Define and run multi-container applications with Docker.
+- [Docker](https://www.docker.com/) - Build, Share, and Run Any App, Anywhere.
+- [dotenv-cli](https://github.com/venthur/dotenv-cli) - A cli to load dotenv files.
+- [dotenv](https://github.com/motdotla/dotenv) - Loads environment variables from .env for nodejs projects.
+- [Kanel](https://github.com/kristiandupont/kanel) - Generate Typescript types from Postgres.
+- [Kysely extension for Kanel](https://github.com/kristiandupont/kanel/tree/main/packages/kanel-kysely) - Generate Kysely types from Postgres.
+- [Kysely](https://kysely.dev/) - The type-safe SQL query builder for TypeScript.
+- [Node Version Manager](https://github.com/nvm-sh/nvm) - POSIX-compliant bash script to manage multiple active node.js versions.
+- [node-postgres](https://node-postgres.com/)- PostgreSQL client for node.js.
+- [Node.js](https://nodejs.org/) - JavaScript runtime.
+- [Pgcli](https://www.pgcli.com/) - A command line interface for Postgres with auto-completion and syntax highlighting.
+- [pkgroll](https://github.com/privatenumber/pkgroll) - Next-gen package bundler for TypeScript & ESM.
+- [pnpm](https://pnpm.io/) - Fast, disk space efficient package manager.
+- [PostgreSQL](https://www.postgresql.org/) - The world's most advanced open source database.
+- [Starknet.js](https://www.starknetjs.com/) - JavaScript library for Starknet
+- [tsx](https://github.com/privatenumber/tsx) - TypeScript Execute: Node.js enhanced to run TypeScript & ESM
+- [TypeScript](https://www.typescriptlang.org/) - Typed JavaScript at Any Scale.
+- [winston](https://github.com/winstonjs/winston) - A logger for just about everything.
+- [znv](https://github.com/lostfictions/znv) - Type-safe environment parsing and validation for Node.js with Zod schemas.
+- [Zod](https://zod.dev/) - TypeScript-first schema validation with static type inference.
