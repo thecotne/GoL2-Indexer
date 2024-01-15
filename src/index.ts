@@ -1,24 +1,8 @@
 import { sql } from "kysely";
-import {
-  constants,
-  Contract,
-  GetTransactionReceiptResponse,
-  RpcProvider,
-  Uint256,
-  num,
-  uint256,
-} from "starknet";
+import { GetTransactionReceiptResponse, Uint256, num, uint256 } from "starknet";
 import { abi } from "./abi";
-import { db, env, log } from "./env";
+import { contract, db, env, log, starknet } from "./env";
 import { EventEventIndex, EventTxHash, NewEvent } from "./schemas/public/Event";
-
-const starknet = new RpcProvider({
-  chainId:
-    env.STARKNET_NETWORK_NAME === "SN_MAIN"
-      ? constants.StarknetChainId.SN_MAIN
-      : constants.StarknetChainId.SN_GOERLI,
-});
-const contract = new Contract(abi, env.CONTRACT_ADDRESS, starknet);
 
 void main();
 
@@ -36,7 +20,7 @@ async function main() {
   }
 }
 
-export async function pullEvents() {
+async function pullEvents() {
   const lastEvent = await db
     .selectFrom("event")
     .select("blockIndex")
@@ -159,7 +143,7 @@ export async function pullEvents() {
   await refreshMaterializedViews();
 }
 
-export async function updateTransactions() {
+async function updateTransactions() {
   const transactionsToUpdate = await db
     .selectFrom("transaction")
     .selectAll()
@@ -203,7 +187,7 @@ async function refreshMaterializedView(name: MaterializedViewName) {
   await query.execute(db);
 }
 
-export async function refreshMaterializedViews() {
+async function refreshMaterializedViews() {
   log.info("Refreshing all materialized views.");
 
   await refreshMaterializedView("balance");

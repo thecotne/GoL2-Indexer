@@ -5,16 +5,24 @@ import { createLogger, format, transports } from "winston";
 import { parseEnv } from "znv";
 import { z } from "zod";
 import Database from "./schemas/Database";
+import { Contract, RpcProvider } from "starknet";
+import { abi } from "./abi";
 
 export const env = parseEnv(process.env, {
   DATABASE_URL: z.string(),
   CONTRACT_ADDRESS: z.string(),
   CONTRACT_BLOCK_NUMBER: z.number(),
-  STARKNET_NETWORK_NAME: z.enum(["SN_MAIN", "SN_GOERLI"]),
+  STARKNET_NETWORK_NAME: z.enum(["SN_MAIN", "SN_GOERLI", "SN_SEPOLIA"]),
   LOG_LEVEL: z
     .enum(["trace", "debug", "info", "warn", "error", "fatal"])
     .default("info"),
 });
+
+export const starknet = new RpcProvider({
+  nodeUrl: env.STARKNET_NETWORK_NAME,
+});
+
+export const contract = new Contract(abi, env.CONTRACT_ADDRESS, starknet);
 
 export const db = new Kysely<Database>({
   dialect: new PostgresDialect({
