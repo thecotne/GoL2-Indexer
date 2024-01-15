@@ -1,3 +1,4 @@
+import { sql } from "kysely";
 import {
   constants,
   Contract,
@@ -8,12 +9,8 @@ import {
   uint256,
 } from "starknet";
 import { abi } from "./abi";
-import { env, knex, log } from "./env";
-import {
-  EventEventIndex,
-  EventInitializer,
-  EventTxHash,
-} from "./schemas/public/Event";
+import { db, env, log } from "./env";
+import { EventEventIndex, EventTxHash, NewEvent } from "./schemas/public/Event";
 
 const starknet = new RpcProvider({
   chainId:
@@ -40,10 +37,12 @@ async function main() {
 }
 
 export async function pullEvents() {
-  const [lastEvent] = await knex("event")
-    .select("*")
+  const lastEvent = await db
+    .selectFrom("event")
+    .select("blockIndex")
     .orderBy("blockIndex", "desc")
-    .limit(1);
+    .limit(1)
+    .executeTakeFirst();
 
   const blockNumber = lastEvent ? lastEvent.blockIndex + 1 : 1;
 
@@ -64,7 +63,7 @@ export async function pullEvents() {
     eventsChunkLength: eventsChunk.events.length,
   });
 
-  const eventRecords: EventInitializer[] = [];
+  const eventRecords: NewEvent[] = [];
 
   while (eventsChunk) {
     if (eventsChunk.events.length > 0) {
@@ -112,7 +111,7 @@ export async function pullEvents() {
             txIndex: i,
             blockHash: emittedEvent.block_hash,
             createdAt: new Date(),
-          } satisfies EventInitializer;
+          } satisfies NewEvent;
         }),
       );
     }
@@ -138,50 +137,57 @@ export async function pullEvents() {
 
   if (eventRecords.length === 0) return;
 
-  await knex.batchInsert("event", eventRecords, 1000);
+  await db.insertInto("event").values(eventRecords).execute();
 
   await refreshMaterializedViews();
 }
 
 export async function updateTransactions() {
-  const transactionsToUpdate = await knex("transaction")
-    .select("*")
-    .whereIn("status", [
-      "NOT_RECEIVED",
-      "RECEIVED",
-      "PENDING",
-      // "ACCEPTED_ON_L2",
-    ]);
+  const transactionsToUpdate = await db
+    .selectFrom("transaction")
+    .selectAll()
+    .where("status", "in", ["NOT_RECEIVED", "RECEIVED", "PENDING"])
+    .execute();
 
-  for (const transaction in transactionsToUpdate) {
-    const tx = await starknet.getTransactionReceipt(
-      transactionsToUpdate[transaction].hash,
-    );
+  for (const transaction of transactionsToUpdate) {
+    const tx = await starknet.getTransactionReceipt(transaction.hash);
 
     if ("block_hash" in tx) {
-      transactionsToUpdate[transaction].blockHash = tx.block_hash;
+      transaction.blockHash = tx.block_hash;
     }
 
-    transactionsToUpdate[transaction].status = tx.finality_status;
-    transactionsToUpdate[transaction].updatedAt = new Date();
-    // transactionsToUpdate[transaction].errorContent = tx.tx_failure_reason!;
+    transaction.status = tx.finality_status;
+    transaction.updatedAt = new Date();
 
     log.info("Updating transaction.", {
-      transactionHash: Number(transactionsToUpdate[transaction].hash),
-      transactionStatus: transactionsToUpdate[transaction].status,
+      transactionHash: Number(transaction.hash),
+      transactionStatus: transaction.status,
     });
 
-    await knex("transaction").upsert(transactionsToUpdate);
+    await db
+      .updateTable("transaction")
+      .set(transaction)
+      .where("hash", "=", transaction.hash)
+      .execute();
+  }
 
+  if (transactionsToUpdate.length > 0) {
     await refreshMaterializedViews();
   }
+}
+
+async function refreshMaterializedView(name: 'balance' | 'creator' | 'infinite') {
+  const query = sql`REFRESH MATERIALIZED VIEW CONCURRENTLY ${sql.table(name)}`;
+
+  log.info("Refreshing materialized view.", { name });
+
+  await query.execute(db);
 }
 
 export async function refreshMaterializedViews() {
   log.info("Refreshing all materialized views.");
 
-  await knex.schema
-    .refreshMaterializedView("balance", true)
-    .refreshMaterializedView("creator", true)
-    .refreshMaterializedView("infinite", true);
+  await refreshMaterializedView('balance');
+  await refreshMaterializedView('creator');
+  await refreshMaterializedView('infinite');
 }

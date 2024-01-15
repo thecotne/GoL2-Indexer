@@ -1,9 +1,10 @@
 import "dotenv/config";
-import Knex from "knex";
+import { Kysely, PostgresDialect } from "kysely";
+import { Pool } from "pg";
 import { createLogger, format, transports } from "winston";
 import { parseEnv } from "znv";
 import { z } from "zod";
-import "./schemas/knex-tables";
+import Database from "./schemas/Database";
 
 export const env = parseEnv(process.env, {
   DATABASE_URL: z.string(),
@@ -14,9 +15,12 @@ export const env = parseEnv(process.env, {
     .default("info"),
 });
 
-export const knex = Knex({
-  client: "pg",
-  connection: env.DATABASE_URL,
+export const db = new Kysely<Database>({
+  dialect: new PostgresDialect({
+    pool: new Pool({
+      connectionString: env.DATABASE_URL,
+    }),
+  }),
 });
 
 export const log = createLogger({

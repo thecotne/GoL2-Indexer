@@ -1,6 +1,6 @@
 require("dotenv/config");
 
-const { generateKnexTablesModule } = require("kanel-knex");
+const { makeKyselyHook } = require("kanel-kysely");
 
 /** @type {import('kanel').Config} */
 module.exports = {
@@ -9,5 +9,5 @@ module.exports = {
   preDeleteOutputFolder: true,
   outputPath: "./src/schemas",
 
-  preRenderHooks: [generateKnexTablesModule],
+  preRenderHooks: [makeKyselyHook()],
 };
