@@ -5,6 +5,7 @@
   "version": "0.0.0-source",
   "bin": "./dist/index.js",
   "license": "UNLICENSED",
+  "files": [],
   "scripts": {
     "build": "pkgroll",
     "dev": "tsx --watch src/index.ts",
