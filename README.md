@@ -15,7 +15,7 @@
 - `docker compose up db -d` - start the database with docker
 - `docker compose rm --stop` - stop and remove the project with docker
 - `pnpm dotenv -- pnpm -c exec 'pgcli "$DATABASE_URL"'` - connect to the database with pgcli
-- `pnpm kanel` - update the database schema
+- `pnpm update-db-types` - update the database schema
 - `biome check --apply .` - check and format the code
 
 ## Env variables
