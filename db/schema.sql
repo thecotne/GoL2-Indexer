@@ -19,13 +19,14 @@ SET default_table_access_method = heap;
 
 CREATE TABLE public.event (
     "txHash" character varying(65) NOT NULL,
-    "eventIndex" integer NOT NULL,
     "txIndex" integer NOT NULL,
-    "blockIndex" integer NOT NULL,
+    "blockHash" character varying(65),
+    "blockIndex" integer,
+    "eventIndex" integer NOT NULL,
     name character varying NOT NULL,
     content jsonb NOT NULL,
     "createdAt" timestamp without time zone DEFAULT now() NOT NULL,
-    "blockHash" character varying(65)
+    "updatedAt" timestamp without time zone
 );
 
 

@@ -17,7 +17,9 @@ export default interface EventTable {
 
   txIndex: ColumnType<number, number, number>;
 
-  blockIndex: ColumnType<number, number, number>;
+  blockHash: ColumnType<string | null, string | null, string | null>;
+
+  blockIndex: ColumnType<number | null, number | null, number | null>;
 
   name: ColumnType<string, string, string>;
 
@@ -25,7 +27,7 @@ export default interface EventTable {
 
   createdAt: ColumnType<Date, Date | string | undefined, Date | string>;
 
-  blockHash: ColumnType<string | null, string | null, string | null>;
+  updatedAt: ColumnType<Date | null, Date | string | null, Date | string | null>;
 }
 
 export type Event = Selectable<EventTable>;

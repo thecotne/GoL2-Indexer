@@ -24,13 +24,15 @@ async function pullEvents() {
   const lastEvent = await db
     .selectFrom("event")
     .select("blockIndex")
+    .where("blockIndex", "is not", null)
     .orderBy("blockIndex", "desc")
     .limit(1)
     .executeTakeFirst();
 
-  const blockNumber = lastEvent
-    ? lastEvent.blockIndex + 1
-    : env.CONTRACT_BLOCK_NUMBER;
+  const blockNumber =
+    lastEvent?.blockIndex != null
+      ? lastEvent.blockIndex + 1
+      : env.CONTRACT_BLOCK_NUMBER;
 
   let eventsChunk: Awaited<ReturnType<typeof starknet.getEvents>> | undefined;
   let eventsPulled = 0;
@@ -43,6 +45,7 @@ async function pullEvents() {
         from_block: {
           block_number: blockNumber,
         },
+        to_block: "pending",
         continuation_token: eventsChunk?.continuation_token,
       });
 
@@ -94,11 +97,25 @@ async function pullEvents() {
             content: eventContent,
             txIndex: i,
             blockHash: emittedEvent.block_hash,
+            updatedAt: new Date(),
             createdAt: new Date(),
-          };
+          } satisfies NewEvent;
         });
 
-        await trx.insertInto("event").values(values).execute();
+        await trx
+          .insertInto("event")
+          .values(values)
+          .onConflict((oc) => {
+            return oc.columns(["txHash", "eventIndex"]).doUpdateSet((eb) => ({
+              blockIndex: eb.ref("excluded.blockIndex"),
+              name: eb.ref("excluded.name"),
+              content: eb.ref("excluded.content"),
+              txIndex: eb.ref("excluded.txIndex"),
+              blockHash: eb.ref("excluded.blockHash"),
+              updatedAt: eb.ref("excluded.updatedAt"),
+            }));
+          })
+          .execute();
 
         log.info("Inserted events chunk.");
       }
