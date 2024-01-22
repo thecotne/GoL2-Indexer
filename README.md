@@ -59,3 +59,15 @@
 - [winston](https://github.com/winstonjs/winston) - A logger for just about everything.
 - [znv](https://github.com/lostfictions/znv) - Type-safe environment parsing and validation for Node.js with Zod schemas.
 - [Zod](https://zod.dev/) - TypeScript-first schema validation with static type inference.
+
+## Related projects
+
+- Cairo Contracts
+  - [perama-v/GoL2](https://github.com/perama-v/GoL2)
+  - [software-mansion-labs/GoL2](https://github.com/software-mansion-labs/GoL2)
+  - [0xDegenDeveloper/gol2](https://github.com/0xDegenDeveloper/gol2)
+- Indexers
+  - [software-mansion-labs/GoL2/indexer](https://github.com/software-mansion-labs/GoL2/tree/main/indexer)
+  - [yuki-wtf/GoL2-Contract/indexer](https://github.com/yuki-wtf/GoL2-Contract/tree/main/indexer)
+- Frontends
+  - [yuki-wtf/gol2](https://github.com/yuki-wtf/gol2)
