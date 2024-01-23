@@ -1,0 +1,3 @@
+REFRESH MATERIALIZED VIEW public.balance;
+REFRESH MATERIALIZED VIEW public.creator;
+REFRESH MATERIALIZED VIEW public.infinite;

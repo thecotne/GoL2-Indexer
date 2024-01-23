@@ -78,20 +78,20 @@ CREATE MATERIALIZED VIEW public.balance AS
 --
 
 CREATE MATERIALIZED VIEW public.creator AS
- SELECT event."txHash" AS "transactionHash",
-    event.name AS "transactionType",
-    event."eventIndex",
-    ((event.content ->> 'user_id'::text))::numeric AS "transactionOwner",
-    ((event.content ->> 'game_id'::text))::numeric AS "gameId",
-    ((event.content ->> 'generation'::text))::numeric AS "gameGeneration",
-    ((event.content ->> 'state'::text))::numeric AS "gameState",
+ SELECT "txHash" AS "transactionHash",
+    name AS "transactionType",
+    "eventIndex",
+    ((content ->> 'user_id'::text))::numeric AS "transactionOwner",
+    ((content ->> 'game_id'::text))::numeric AS "gameId",
+    ((content ->> 'generation'::text))::numeric AS "gameGeneration",
+    ((content ->> 'state'::text))::numeric AS "gameState",
         CASE
-            WHEN (((event.content ->> 'state'::text))::numeric = (0)::numeric) THEN true
+            WHEN (((content ->> 'state'::text))::numeric = (0)::numeric) THEN true
             ELSE false
         END AS "gameOver",
-    event."createdAt"
+    "createdAt"
    FROM public.event
-  WHERE (((event.name)::text = ANY (ARRAY[('game_evolved'::character varying)::text, ('game_created'::character varying)::text])) AND (((event.content ->> 'game_id'::text))::numeric <> '39132555273291485155644251043342963441664'::numeric))
+  WHERE (((name)::text = ANY (ARRAY[('game_evolved'::character varying)::text, ('game_created'::character varying)::text])) AND (((content ->> 'game_id'::text))::numeric <> '39132555273291485155644251043342963441664'::numeric))
   WITH NO DATA;
 
 
@@ -100,20 +100,20 @@ CREATE MATERIALIZED VIEW public.creator AS
 --
 
 CREATE MATERIALIZED VIEW public.infinite AS
- SELECT event."txHash" AS "transactionHash",
-    event.name AS "transactionType",
-    event."eventIndex",
-    ((event.content ->> 'user_id'::text))::numeric AS "transactionOwner",
-    ((event.content ->> 'generation'::text))::numeric AS "gameGeneration",
-    ((event.content ->> 'state'::text))::numeric AS "gameState",
-    ((event.content ->> 'cell_index'::text))::numeric AS "revivedCellIndex",
+ SELECT "txHash" AS "transactionHash",
+    name AS "transactionType",
+    "eventIndex",
+    ((content ->> 'user_id'::text))::numeric AS "transactionOwner",
+    ((content ->> 'generation'::text))::numeric AS "gameGeneration",
+    ((content ->> 'state'::text))::numeric AS "gameState",
+    ((content ->> 'cell_index'::text))::numeric AS "revivedCellIndex",
         CASE
-            WHEN (((event.content ->> 'state'::text))::numeric = (0)::numeric) THEN true
+            WHEN (((content ->> 'state'::text))::numeric = (0)::numeric) THEN true
             ELSE false
         END AS "gameExtinct",
-    event."createdAt"
+    "createdAt"
    FROM public.event
-  WHERE ((((event.name)::text = ANY (ARRAY[('game_evolved'::character varying)::text, ('game_created'::character varying)::text])) AND (((event.content ->> 'game_id'::text))::numeric = '39132555273291485155644251043342963441664'::numeric)) OR ((event.name)::text = 'cell_revived'::text))
+  WHERE ((((name)::text = ANY (ARRAY[('game_evolved'::character varying)::text, ('game_created'::character varying)::text])) AND (((content ->> 'game_id'::text))::numeric = '39132555273291485155644251043342963441664'::numeric)) OR ((name)::text = 'cell_revived'::text))
   WITH NO DATA;
 
 

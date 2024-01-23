@@ -157,7 +157,4 @@ CREATE INDEX "infinite_transactionType_transactionOwner_createdAt_gameExt_idx" O
   "createdAt",
   "gameExtinct"
 );
-REFRESH MATERIALIZED VIEW public.balance;
-REFRESH MATERIALIZED VIEW public.creator;
-REFRESH MATERIALIZED VIEW public.infinite;
 -- migrate:down
