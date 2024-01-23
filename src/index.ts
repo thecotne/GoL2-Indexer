@@ -29,98 +29,113 @@ async function pullEvents() {
     .limit(1)
     .executeTakeFirst();
 
-  const blockNumber =
+  const latestAcceptedBlock = await starknet.getBlockLatestAccepted();
+  const blockNumber = Math.min(
+    latestAcceptedBlock.block_number,
     lastEvent?.blockIndex != null
-      ? lastEvent.blockIndex + 1
-      : env.CONTRACT_BLOCK_NUMBER;
-
+      ? lastEvent.blockIndex
+      : env.CONTRACT_BLOCK_NUMBER,
+  );
   let eventsChunk: Awaited<ReturnType<typeof starknet.getEvents>> | undefined;
   let eventsPulled = 0;
 
-  await db.transaction().execute(async (trx) => {
-    do {
-      eventsChunk = await starknet.getEvents({
-        chunk_size: 1000,
-        address: env.CONTRACT_ADDRESS,
-        from_block: {
-          block_number: blockNumber,
-        },
-        to_block: "pending",
-        continuation_token: eventsChunk?.continuation_token,
-      });
+  do {
+    log.info("Pulling events chunk.", {
+      chunk_size: 1000,
+      address: env.CONTRACT_ADDRESS,
+      from_block: {
+        block_number: blockNumber,
+      },
+      to_block: "pending",
+      continuation_token: eventsChunk?.continuation_token,
+    });
 
-      assert(eventsChunk != null, "Events chunk is null.");
-      assert(typeof eventsChunk === "object", "Events chunk is not an object.");
-      assert(
-        Array.isArray(eventsChunk.events),
-        "Events chunk is not an array.",
-      );
+    eventsChunk = await starknet.getEvents({
+      chunk_size: 1000,
+      address: env.CONTRACT_ADDRESS,
+      from_block: {
+        block_number: blockNumber,
+      },
+      to_block: "pending",
+      continuation_token: eventsChunk?.continuation_token,
+    });
 
-      log.debug("Events chunk.", {
-        eventsChunk,
-      });
+    assert(eventsChunk != null, "Events chunk is null.");
+    assert(typeof eventsChunk === "object", "Events chunk is not an object.");
+    assert(Array.isArray(eventsChunk.events), "Events chunk is not an array.");
 
-      eventsPulled += eventsChunk.events.length;
+    log.debug("Events chunk.", {
+      eventsChunk,
+    });
 
-      log.info("Pulled events chunk.", {
-        blockNumber,
-        eventsPulled,
-        eventsChunkLength: eventsChunk.events.length,
-        continuationToken: eventsChunk.continuation_token,
-      });
+    eventsPulled += eventsChunk.events.length;
 
-      if (eventsChunk.events.length > 0) {
-        const values = eventsChunk.events.map<NewEvent>((emittedEvent, i) => {
-          log.debug("Parsing event.", {
-            blockNumber: emittedEvent.block_number,
-            transactionHash: emittedEvent.transaction_hash,
-          });
+    log.info("Pulled events chunk.", {
+      blockNumber,
+      eventsPulled,
+      eventsChunkLength: eventsChunk.events.length,
+      continuationToken: eventsChunk.continuation_token,
+    });
 
-          const [ParsedEvent] = contract.parseEvents({
-            events: [emittedEvent],
-          } as GetTransactionReceiptResponse);
+    if (eventsChunk.events.length > 0) {
+      const values: NewEvent[] = [];
 
-          const [eventName] = Object.keys(ParsedEvent);
-          const eventContent = ParsedEvent[eventName];
-
-          for (const [key, value] of Object.entries(eventContent)) {
-            if (typeof value === "bigint") {
-              eventContent[key] = value.toString();
-            }
-          }
-
-          return {
-            txHash: emittedEvent.transaction_hash as EventTxHash,
-            eventIndex: i as EventEventIndex,
-            blockIndex: emittedEvent.block_number,
-            name: eventNameMap[eventName] ?? eventName,
-            content: eventContent,
-            txIndex: i,
-            blockHash: emittedEvent.block_hash,
-            updatedAt: new Date(),
-            createdAt: new Date(),
-          } satisfies NewEvent;
+      for (const [i, emittedEvent] of eventsChunk.events.entries()) {
+        log.debug("Parsing event.", {
+          blockNumber: emittedEvent.block_number,
+          transactionHash: emittedEvent.transaction_hash,
         });
 
-        await trx
-          .insertInto("event")
-          .values(values)
-          .onConflict((oc) => {
-            return oc.columns(["txHash", "eventIndex"]).doUpdateSet((eb) => ({
-              blockIndex: eb.ref("excluded.blockIndex"),
-              name: eb.ref("excluded.name"),
-              content: eb.ref("excluded.content"),
-              txIndex: eb.ref("excluded.txIndex"),
-              blockHash: eb.ref("excluded.blockHash"),
-              updatedAt: eb.ref("excluded.updatedAt"),
-            }));
-          })
-          .execute();
+        const [ParsedEvent] = contract.parseEvents({
+          events: [emittedEvent],
+        } as GetTransactionReceiptResponse);
+        const [eventName] = Object.keys(ParsedEvent);
 
-        log.info("Inserted events chunk.");
+        const eventContent: { [key: string]: unknown } = {};
+
+        for (const [key, value] of Object.entries(ParsedEvent[eventName])) {
+          if (typeof value === "bigint") {
+            eventContent[key] = value.toString();
+          }
+        }
+
+        values.push({
+          txHash: emittedEvent.transaction_hash as EventTxHash,
+          txFinalityStatus:
+            emittedEvent.block_number != null ? "ACCEPTED_ON_L2" : "RECEIVED",
+          txExecutionStatus:
+            emittedEvent.block_number != null ? "SUCCEEDED" : null,
+          eventIndex: i as EventEventIndex,
+          blockIndex: emittedEvent.block_number,
+          name: eventNameMap[eventName] ?? eventName,
+          content: eventContent,
+          txIndex: i,
+          blockHash: emittedEvent.block_hash,
+          updatedAt: new Date(),
+          createdAt: new Date(),
+        });
       }
-    } while (eventsChunk.continuation_token);
-  });
+
+      await db
+        .insertInto("event")
+        .values(values)
+        .onConflict((oc) => {
+          return oc.columns(["txHash", "eventIndex"]).doUpdateSet((eb) => ({
+            blockIndex: eb.ref("excluded.blockIndex"),
+            name: eb.ref("excluded.name"),
+            content: eb.ref("excluded.content"),
+            txIndex: eb.ref("excluded.txIndex"),
+            blockHash: eb.ref("excluded.blockHash"),
+            updatedAt: eb.ref("excluded.updatedAt"),
+          }));
+        })
+        .execute();
+
+      log.info("Inserted events chunk.");
+
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+    }
+  } while (eventsChunk.continuation_token);
 
   if (eventsPulled > 0) {
     await refreshMaterializedViews();
@@ -137,22 +152,22 @@ async function updateTransactions() {
   const transactionsToUpdate = await db
     .selectFrom("transaction")
     .selectAll()
-    .where("status", "in", ["NOT_RECEIVED", "RECEIVED", "PENDING"])
+    .where("finalityStatus", "in", ["NOT_RECEIVED", "RECEIVED", "PENDING"])
     .execute();
 
+  log.info("transactionsToUpdate", transactionsToUpdate);
+
   for (const transaction of transactionsToUpdate) {
-    const tx = await starknet.getTransactionReceipt(transaction.hash);
+    const tx = await starknet.getTransactionStatus(transaction.hash);
 
-    if ("block_hash" in tx) {
-      transaction.blockHash = tx.block_hash;
-    }
-
-    transaction.status = tx.finality_status;
+    transaction.finalityStatus = tx.finality_status;
+    transaction.executionStatus = tx.execution_status ?? null;
     transaction.updatedAt = new Date();
 
     log.info("Updating transaction.", {
       transactionHash: Number(transaction.hash),
-      transactionStatus: transaction.status,
+      finalityStatus: transaction.finalityStatus,
+      executionStatus: transaction.executionStatus,
     });
 
     await db

@@ -12,7 +12,9 @@ export default interface TransactionTable {
 
   blockHash: ColumnType<string | null, string | null, string | null>;
 
-  status: ColumnType<string, string, string>;
+  finalityStatus: ColumnType<string, string, string>;
+
+  executionStatus: ColumnType<string | null, string | null, string | null>;
 
   createdAt: ColumnType<Date, Date | string | undefined, Date | string>;
 

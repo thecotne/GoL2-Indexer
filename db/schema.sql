@@ -19,6 +19,8 @@ SET default_table_access_method = heap;
 
 CREATE TABLE public.event (
     "txHash" character varying(65) NOT NULL,
+    "txFinalityStatus" character varying NOT NULL,
+    "txExecutionStatus" character varying,
     "txIndex" integer NOT NULL,
     "blockHash" character varying(65),
     "blockIndex" integer,
@@ -80,6 +82,8 @@ CREATE MATERIALIZED VIEW public.balance AS
 CREATE MATERIALIZED VIEW public.creator AS
  SELECT "txHash" AS "transactionHash",
     name AS "transactionType",
+    "txFinalityStatus",
+    "txExecutionStatus",
     "eventIndex",
     ((content ->> 'user_id'::text))::numeric AS "transactionOwner",
     ((content ->> 'game_id'::text))::numeric AS "gameId",
@@ -102,6 +106,8 @@ CREATE MATERIALIZED VIEW public.creator AS
 CREATE MATERIALIZED VIEW public.infinite AS
  SELECT "txHash" AS "transactionHash",
     name AS "transactionType",
+    "txFinalityStatus",
+    "txExecutionStatus",
     "eventIndex",
     ((content ->> 'user_id'::text))::numeric AS "transactionOwner",
     ((content ->> 'generation'::text))::numeric AS "gameGeneration",
@@ -133,7 +139,8 @@ CREATE TABLE public.schema_migrations (
 CREATE TABLE public.transaction (
     hash character varying(65) NOT NULL,
     "blockHash" character varying(65),
-    status character varying NOT NULL,
+    "finalityStatus" character varying NOT NULL,
+    "executionStatus" character varying,
     "createdAt" timestamp without time zone DEFAULT now() NOT NULL,
     "updatedAt" timestamp without time zone,
     "functionName" character varying NOT NULL,
@@ -145,19 +152,11 @@ CREATE TABLE public.transaction (
 
 
 --
--- Name: event PK_168407df0cd2c71680bf4287000; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: event event_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.event
-    ADD CONSTRAINT "PK_168407df0cd2c71680bf4287000" PRIMARY KEY ("txHash", "eventIndex");
-
-
---
--- Name: transaction PK_de4f0899c41c688529784bc443f; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.transaction
-    ADD CONSTRAINT "PK_de4f0899c41c688529784bc443f" PRIMARY KEY (hash);
+    ADD CONSTRAINT event_pkey PRIMARY KEY ("txHash", "eventIndex");
 
 
 --
@@ -169,115 +168,32 @@ ALTER TABLE ONLY public.schema_migrations
 
 
 --
--- Name: IDX_08f3024b3fad3c62274225faf9; Type: INDEX; Schema: public; Owner: -
+-- Name: transaction transaction_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-CREATE INDEX "IDX_08f3024b3fad3c62274225faf9" ON public.transaction USING btree ("blockHash");
-
-
---
--- Name: IDX_0d681662b792661c819f8276a0; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "IDX_0d681662b792661c819f8276a0" ON public.transaction USING btree ("functionInputGameId");
+ALTER TABLE ONLY public.transaction
+    ADD CONSTRAINT transaction_pkey PRIMARY KEY (hash);
 
 
 --
--- Name: IDX_253f6b005b632dbac80cff5020; Type: INDEX; Schema: public; Owner: -
+-- Name: balance_idx; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX "IDX_253f6b005b632dbac80cff5020" ON public.transaction USING btree ("updatedAt");
-
-
---
--- Name: IDX_32ad9e0d62211b679ebca15104; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "IDX_32ad9e0d62211b679ebca15104" ON public.transaction USING btree ("functionCaller");
+CREATE UNIQUE INDEX balance_idx ON public.balance USING btree ("userId");
 
 
 --
--- Name: IDX_54dcd9578eb59a50d4095eae99; Type: INDEX; Schema: public; Owner: -
+-- Name: creator_idx; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX "IDX_54dcd9578eb59a50d4095eae99" ON public.transaction USING btree ("functionName");
-
-
---
--- Name: IDX_63f749fc7f7178ae1ad85d3b95; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "IDX_63f749fc7f7178ae1ad85d3b95" ON public.transaction USING btree (status);
+CREATE UNIQUE INDEX creator_idx ON public.creator USING btree ("transactionHash", "eventIndex");
 
 
 --
--- Name: IDX_7719a5dd0518e380f8911fb7ff; Type: INDEX; Schema: public; Owner: -
+-- Name: infinite_idx; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX "IDX_7719a5dd0518e380f8911fb7ff" ON public.transaction USING btree ("functionInputGameState");
-
-
---
--- Name: IDX_7f40575a1b279607e73504117e; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "IDX_7f40575a1b279607e73504117e" ON public.transaction USING btree ("functionInputCellIndex");
-
-
---
--- Name: IDX_83cb622ce2d74c56db3e0c29f1; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "IDX_83cb622ce2d74c56db3e0c29f1" ON public.transaction USING btree ("createdAt");
-
-
---
--- Name: IDX_b535fbe8ec6d832dde22065ebd; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "IDX_b535fbe8ec6d832dde22065ebd" ON public.event USING btree (name);
-
-
---
--- Name: balance_userId_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX "balance_userId_idx" ON public.balance USING btree ("userId");
-
-
---
--- Name: balance_userId_updatedAt_createdAt_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "balance_userId_updatedAt_createdAt_idx" ON public.balance USING btree ("userId", "updatedAt", "createdAt");
-
-
---
--- Name: creator_transactionHash_eventIndex_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX "creator_transactionHash_eventIndex_idx" ON public.creator USING btree ("transactionHash", "eventIndex");
-
-
---
--- Name: creator_transactionType_transactionOwner_gameId_createdAt_g_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "creator_transactionType_transactionOwner_gameId_createdAt_g_idx" ON public.creator USING btree ("transactionType", "transactionOwner", "gameId", "createdAt", "gameOver");
-
-
---
--- Name: infinite_transactionHash_eventIndex_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX "infinite_transactionHash_eventIndex_idx" ON public.infinite USING btree ("transactionHash", "eventIndex");
-
-
---
--- Name: infinite_transactionType_transactionOwner_createdAt_gameExt_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX "infinite_transactionType_transactionOwner_createdAt_gameExt_idx" ON public.infinite USING btree ("transactionType", "transactionOwner", "createdAt", "gameExtinct");
+CREATE UNIQUE INDEX infinite_idx ON public.infinite USING btree ("transactionHash", "eventIndex");
 
 
 --
