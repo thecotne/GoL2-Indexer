@@ -10,8 +10,6 @@ export type TransactionHash = string & { __brand: 'TransactionHash' };
 export default interface TransactionTable {
   hash: ColumnType<TransactionHash, TransactionHash, TransactionHash>;
 
-  blockHash: ColumnType<string | null, string | null, string | null>;
-
   finalityStatus: ColumnType<string, string, string>;
 
   executionStatus: ColumnType<string | null, string | null, string | null>;

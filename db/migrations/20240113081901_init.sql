@@ -16,6 +16,19 @@ CREATE TABLE public.event(
 -- EVENT TABLE INDEXES
 ALTER TABLE public.event
 ADD CONSTRAINT "event_pkey" PRIMARY KEY ("txHash", "eventIndex");
+-- TRANSACTION TABLE
+CREATE TABLE public.transaction(
+  hash character varying(65) NOT NULL PRIMARY KEY,
+  "finalityStatus" character varying NOT NULL,
+  "executionStatus" character varying,
+  "createdAt" timestamp without time zone DEFAULT now() NOT NULL,
+  "updatedAt" timestamp without time zone,
+  "functionName" character varying NOT NULL,
+  "functionCaller" numeric NOT NULL,
+  "functionInputCellIndex" integer,
+  "functionInputGameState" numeric,
+  "functionInputGameId" numeric
+);
 -- BALANCE VIEW
 CREATE MATERIALIZED VIEW public.balance AS (
   WITH transfers AS (
@@ -137,24 +150,13 @@ CREATE MATERIALIZED VIEW public.infinite AS(
 ) WITH NO DATA;
 -- INFINITE VIEW INDEXES
 CREATE UNIQUE INDEX "infinite_idx" ON public.infinite USING btree("transactionHash", "eventIndex");
--- TRANSACTION TABLE
-CREATE TABLE public.transaction(
-  hash character varying(65) NOT NULL PRIMARY KEY,
-  "finalityStatus" character varying NOT NULL,
-  "executionStatus" character varying,
-  "createdAt" timestamp without time zone DEFAULT now() NOT NULL,
-  "updatedAt" timestamp without time zone,
-  "functionName" character varying NOT NULL,
-  "functionCaller" numeric NOT NULL,
-  "functionInputCellIndex" integer,
-  "functionInputGameState" numeric,
-  "functionInputGameId" numeric
-);
-
+-- REFRESH MATERIALIZED VIEWS
+REFRESH MATERIALIZED VIEW public.balance;
+REFRESH MATERIALIZED VIEW public.creator;
+REFRESH MATERIALIZED VIEW public.infinite;
 -- migrate:down
 DROP TABLE public.event;
+DROP TABLE public.transaction;
 DROP MATERIALIZED VIEW public.balance;
 DROP MATERIALIZED VIEW public.creator;
 DROP MATERIALIZED VIEW public.infinite;
-DROP TABLE public.transaction;
--- DROP INDEX IF EXISTS "IDX_08f3024b3fad3c62274225faf9";

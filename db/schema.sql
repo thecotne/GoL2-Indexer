@@ -138,7 +138,6 @@ CREATE TABLE public.schema_migrations (
 
 CREATE TABLE public.transaction (
     hash character varying(65) NOT NULL,
-    "blockHash" character varying(65),
     "finalityStatus" character varying NOT NULL,
     "executionStatus" character varying,
     "createdAt" timestamp without time zone DEFAULT now() NOT NULL,
