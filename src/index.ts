@@ -119,11 +119,11 @@ async function pullEvents() {
 
         values.push({
           txHash: emittedEvent.transaction_hash as EventTxHash,
+          eventIndex: eventIndex as EventEventIndex,
           txFinalityStatus:
             emittedEvent.block_number != null ? "ACCEPTED_ON_L2" : "RECEIVED",
           txExecutionStatus:
             emittedEvent.block_number != null ? "SUCCEEDED" : null,
-          eventIndex: eventIndex as EventEventIndex,
           blockIndex: emittedEvent.block_number,
           name: eventNameMap[eventName] ?? eventName,
           content: eventContent,
@@ -139,6 +139,8 @@ async function pullEvents() {
         .values(values)
         .onConflict((oc) => {
           return oc.columns(["txHash", "eventIndex"]).doUpdateSet((eb) => ({
+            txFinalityStatus: eb.ref("excluded.txFinalityStatus"),
+            txExecutionStatus: eb.ref("excluded.txExecutionStatus"),
             blockIndex: eb.ref("excluded.blockIndex"),
             name: eb.ref("excluded.name"),
             content: eb.ref("excluded.content"),
