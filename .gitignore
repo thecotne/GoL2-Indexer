@@ -4,3 +4,4 @@ dist
 node_modules
 gol2-indexer-0.0.0-source.tgz
 package
+.env
