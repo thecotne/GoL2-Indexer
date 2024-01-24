@@ -79,8 +79,26 @@ async function pullEvents() {
 
     if (eventsChunk.events.length > 0) {
       const values: NewEvent[] = [];
+      let blockHash: string | null = null;
+      let txHash: string | null = null;
+      let txIndex = 0;
+      let eventIndex = 0;
 
-      for (const [i, emittedEvent] of eventsChunk.events.entries()) {
+      for (const emittedEvent of eventsChunk.events.values()) {
+        if (emittedEvent.block_hash !== blockHash) {
+          blockHash = emittedEvent.block_hash;
+          txHash = emittedEvent.transaction_hash;
+          txIndex = 0;
+          eventIndex = 0;
+        } else {
+          if (emittedEvent.transaction_hash !== txHash) {
+            txHash = emittedEvent.transaction_hash;
+            txIndex++;
+          } else {
+            eventIndex++;
+          }
+        }
+
         log.debug("Parsing event.", {
           blockNumber: emittedEvent.block_number,
           transactionHash: emittedEvent.transaction_hash,
@@ -105,11 +123,11 @@ async function pullEvents() {
             emittedEvent.block_number != null ? "ACCEPTED_ON_L2" : "RECEIVED",
           txExecutionStatus:
             emittedEvent.block_number != null ? "SUCCEEDED" : null,
-          eventIndex: i as EventEventIndex,
+          eventIndex: eventIndex as EventEventIndex,
           blockIndex: emittedEvent.block_number,
           name: eventNameMap[eventName] ?? eventName,
           content: eventContent,
-          txIndex: i,
+          txIndex,
           blockHash: emittedEvent.block_hash,
           updatedAt: new Date(),
           createdAt: new Date(),
