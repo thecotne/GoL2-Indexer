@@ -15,6 +15,7 @@ import PublicSchema from "./schemas/public/PublicSchema";
 
 export const env = parseEnv(process.env, {
   DATABASE_URL: z.string(),
+  INFURA_API_KEY: z.string().nullable(),
   CONTRACT_ADDRESS: z.string(),
   CONTRACT_BLOCK_NUMBER: z.number(),
   STARKNET_NETWORK_NAME: z.enum(["SN_MAIN", "SN_GOERLI", "SN_SEPOLIA"]),
@@ -24,7 +25,11 @@ export const env = parseEnv(process.env, {
 });
 
 export const starknet = new RpcProvider({
-  nodeUrl: env.STARKNET_NETWORK_NAME,
+  nodeUrl: env.INFURA_API_KEY
+    ? `https://starknet-${
+        env.STARKNET_NETWORK_NAME === "SN_MAIN" ? "mainnet" : "goerli"
+      }.infura.io/v3/${env.INFURA_API_KEY}`
+    : env.STARKNET_NETWORK_NAME,
 });
 
 export type Abi = Array<FunctionAbi | EventAbi | StructAbi>;
