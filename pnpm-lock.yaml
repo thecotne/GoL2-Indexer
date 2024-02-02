@@ -5,6 +5,9 @@ settings:
   excludeLinksFromLockfile: false
 
 dependencies:
+  dbmate:
+    specifier: ^2.11.0
+    version: 2.11.0
   dotenv:
     specifier: ^16.3.2
     version: 16.3.2
@@ -37,9 +40,6 @@ devDependencies:
   '@types/pg':
     specifier: ^8.10.9
     version: 8.10.9
-  dbmate:
-    specifier: ^2.11.0
-    version: 2.11.0
   dotenv-cli:
     specifier: ^7.3.0
     version: 7.3.0
@@ -172,7 +172,7 @@ packages:
     cpu: [arm64]
     os: [darwin]
     requiresBuild: true
-    dev: true
+    dev: false
     optional: true
 
   /@dbmate/darwin-x64@2.11.0:
@@ -180,7 +180,7 @@ packages:
     cpu: [x64]
     os: [darwin]
     requiresBuild: true
-    dev: true
+    dev: false
     optional: true
 
   /@dbmate/linux-arm64@2.11.0:
@@ -188,7 +188,7 @@ packages:
     cpu: [arm64]
     os: [linux]
     requiresBuild: true
-    dev: true
+    dev: false
     optional: true
 
   /@dbmate/linux-arm@2.11.0:
@@ -196,7 +196,7 @@ packages:
     cpu: [arm]
     os: [linux]
     requiresBuild: true
-    dev: true
+    dev: false
     optional: true
 
   /@dbmate/linux-ia32@2.11.0:
@@ -204,7 +204,7 @@ packages:
     cpu: [ia32]
     os: [linux]
     requiresBuild: true
-    dev: true
+    dev: false
     optional: true
 
   /@dbmate/linux-x64@2.11.0:
@@ -212,7 +212,7 @@ packages:
     cpu: [x64]
     os: [linux]
     requiresBuild: true
-    dev: true
+    dev: false
     optional: true
 
   /@dbmate/win32-x64@2.11.0:
@@ -220,7 +220,7 @@ packages:
     cpu: [x64]
     os: [win32]
     requiresBuild: true
-    dev: true
+    dev: false
     optional: true
 
   /@esbuild/aix-ppc64@0.19.11:
@@ -943,7 +943,7 @@ packages:
       '@dbmate/linux-ia32': 2.11.0
       '@dbmate/linux-x64': 2.11.0
       '@dbmate/win32-x64': 2.11.0
-    dev: true
+    dev: false
 
   /debug@4.3.4:
     resolution: {integrity: sha512-PRWFHuSU3eDtQJPvnNY7Jcket1j0t5OuOsFzPPzsekD52Zl8qUfFIPEiswXqIvHWGVHOgX+7G/vCNNhehwxfkQ==}

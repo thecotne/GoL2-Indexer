@@ -1,31 +1,22 @@
-FROM node:20.11.0-alpine as build
-
-WORKDIR /build
-
-COPY package.json pnpm-lock.yaml /build/
-
-RUN corepack enable && pnpm install
-
-COPY src /build/src/
-
-COPY tsconfig.json /build/
-
-RUN pnpm build && pnpm pack
-
-FROM node:20.11.0-alpine as app
-
+# prepare base image
+FROM node:20.11.0-alpine as base
 WORKDIR /app
 
-RUN <<EOF
-  corepack enable
-  pnpm init
-  pnpm add dbmate@^2.10.0
-EOF
+# prepare /app/node_modules
+FROM base as prod
+COPY package.json pnpm-lock.yaml ./
+RUN corepack enable && pnpm install --prod
 
-COPY --from=build /build/gol2-indexer-0.0.0-source.tgz /app/
+# prepare /app/dist
+FROM prod as build
+RUN pnpm install
+COPY src ./src/
+COPY tsconfig.json ./
+RUN pnpm build
 
-RUN pnpm add /app/gol2-indexer-0.0.0-source.tgz
-
-COPY db /app/db/
-
-CMD ["pnpm", "--shell-mode", "exec", "dbmate wait && dbmate up && gol2-indexer"]
+# build final image
+FROM base as app
+COPY --from=prod /app/node_modules ./node_modules/
+COPY --from=build /app/dist ./dist/
+COPY db ./db/
+CMD ["/bin/sh", "-c", "./node_modules/.bin/dbmate wait && ./node_modules/.bin/dbmate up && ./dist/index.mjs"]

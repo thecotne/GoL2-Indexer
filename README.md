@@ -8,8 +8,7 @@
 - `pnpm build` - build the project
 - `pnpm dev` - start the project
 - `pnpm debug` - start the project with debug logs
-- `pnpm package` - build `dist`, `gol2-indexer-0.0.0-source.tgz` and `package`
-- `pnpm clean` - remove `dist`, `gol2-indexer-0.0.0-source.tgz` and `package`
+- `pnpm clean` - remove `dist`
 - `docker compose up --build` - start the project with docker
 - `docker compose up -d` - start the project with docker in detached mode
 - `docker compose up db -d` - start the database with docker
