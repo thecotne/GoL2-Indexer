@@ -206,13 +206,9 @@ export async function pullEvents() {
             eventIndex++;
           }
 
-          const hasBlockNumber = event.block_number != null;
-
           return {
             txHash: event.transaction_hash as EventTxHash,
             eventIndex: eventIndex as EventEventIndex,
-            txFinalityStatus: hasBlockNumber ? "ACCEPTED_ON_L2" : "RECEIVED",
-            txExecutionStatus: hasBlockNumber ? "SUCCEEDED" : null,
             blockIndex: event.block_number,
             name: eventName,
             content: parsedStruct,
@@ -220,7 +216,7 @@ export async function pullEvents() {
             blockHash: event.block_hash,
             updatedAt: new Date(),
             createdAt: new Date(),
-          };
+          } satisfies NewEvent;
         },
       );
 
@@ -229,8 +225,6 @@ export async function pullEvents() {
         .values(values)
         .onConflict((oc) => {
           return oc.columns(["txHash", "eventIndex"]).doUpdateSet((eb) => ({
-            txFinalityStatus: eb.ref("excluded.txFinalityStatus"),
-            txExecutionStatus: eb.ref("excluded.txExecutionStatus"),
             blockIndex: eb.ref("excluded.blockIndex"),
             name: eb.ref("excluded.name"),
             content: eb.ref("excluded.content"),

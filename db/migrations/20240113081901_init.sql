@@ -2,8 +2,6 @@
 -- EVENT TABLE
 CREATE TABLE public.event(
   "txHash" character varying(65) NOT NULL,
-  "txFinalityStatus" character varying NOT NULL,
-  "txExecutionStatus" character varying,
   "txIndex" integer NOT NULL,
   "blockHash" character varying(65),
   "blockIndex" integer,
@@ -83,13 +81,17 @@ CREATE UNIQUE INDEX "balance_idx" ON public.balance USING btree("userId");
 CREATE MATERIALIZED VIEW public.creator AS(
   SELECT event."txHash" AS "transactionHash",
     event.name AS "transactionType",
-    event."txFinalityStatus",
-    event."txExecutionStatus",
     event."eventIndex",
     (event.content->>'user_id')::numeric AS "transactionOwner",
     (event.content->>'game_id')::numeric AS "gameId",
     (event.content->>'generation')::numeric AS "gameGeneration",
     (event.content->>'state')::numeric AS "gameState",
+    (
+      case
+        when event."blockIndex" is null then 'PENDING'
+        else 'ACCEPTED_ON_L2'
+      end
+    ) as "txStatus",
     CASE
       WHEN (
         (event.content->>'state')::numeric =(0)::numeric
@@ -117,13 +119,17 @@ CREATE UNIQUE INDEX "creator_idx" ON public.creator USING btree("transactionHash
 CREATE MATERIALIZED VIEW public.infinite AS(
   SELECT event."txHash" AS "transactionHash",
     event.name AS "transactionType",
-    event."txFinalityStatus",
-    event."txExecutionStatus",
     event."eventIndex",
     (event.content->>'user_id')::numeric AS "transactionOwner",
     (event.content->>'generation')::numeric AS "gameGeneration",
     (event.content->>'state')::numeric AS "gameState",
     (event.content->>'cell_index')::numeric AS "revivedCellIndex",
+    (
+      case
+        when event."blockIndex" is null then 'PENDING'
+        else 'ACCEPTED_ON_L2'
+      end
+    ) as "txStatus",
     CASE
       WHEN (
         (event.content->>'state')::numeric =(0)::numeric

@@ -15,10 +15,6 @@ export default interface EventTable {
 
   eventIndex: ColumnType<EventEventIndex, EventEventIndex, EventEventIndex>;
 
-  txFinalityStatus: ColumnType<string, string, string>;
-
-  txExecutionStatus: ColumnType<string | null, string | null, string | null>;
-
   txIndex: ColumnType<number, number, number>;
 
   blockHash: ColumnType<string | null, string | null, string | null>;

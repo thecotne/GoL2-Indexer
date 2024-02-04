@@ -9,10 +9,6 @@ export default interface InfiniteTable {
 
   transactionType: ColumnType<string | null, never, never>;
 
-  txFinalityStatus: ColumnType<string | null, never, never>;
-
-  txExecutionStatus: ColumnType<string | null, never, never>;
-
   eventIndex: ColumnType<number | null, never, never>;
 
   transactionOwner: ColumnType<string | null, never, never>;
@@ -22,6 +18,8 @@ export default interface InfiniteTable {
   gameState: ColumnType<string | null, never, never>;
 
   revivedCellIndex: ColumnType<string | null, never, never>;
+
+  txStatus: ColumnType<string | null, never, never>;
 
   gameExtinct: ColumnType<boolean | null, never, never>;
 

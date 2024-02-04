@@ -19,8 +19,6 @@ SET default_table_access_method = heap;
 
 CREATE TABLE public.event (
     "txHash" character varying(65) NOT NULL,
-    "txFinalityStatus" character varying NOT NULL,
-    "txExecutionStatus" character varying,
     "txIndex" integer NOT NULL,
     "blockHash" character varying(65),
     "blockIndex" integer,
@@ -82,13 +80,15 @@ CREATE MATERIALIZED VIEW public.balance AS
 CREATE MATERIALIZED VIEW public.creator AS
  SELECT "txHash" AS "transactionHash",
     name AS "transactionType",
-    "txFinalityStatus",
-    "txExecutionStatus",
     "eventIndex",
     ((content ->> 'user_id'::text))::numeric AS "transactionOwner",
     ((content ->> 'game_id'::text))::numeric AS "gameId",
     ((content ->> 'generation'::text))::numeric AS "gameGeneration",
     ((content ->> 'state'::text))::numeric AS "gameState",
+        CASE
+            WHEN ("blockIndex" IS NULL) THEN 'PENDING'::text
+            ELSE 'ACCEPTED_ON_L2'::text
+        END AS "txStatus",
         CASE
             WHEN (((content ->> 'state'::text))::numeric = (0)::numeric) THEN true
             ELSE false
@@ -106,13 +106,15 @@ CREATE MATERIALIZED VIEW public.creator AS
 CREATE MATERIALIZED VIEW public.infinite AS
  SELECT "txHash" AS "transactionHash",
     name AS "transactionType",
-    "txFinalityStatus",
-    "txExecutionStatus",
     "eventIndex",
     ((content ->> 'user_id'::text))::numeric AS "transactionOwner",
     ((content ->> 'generation'::text))::numeric AS "gameGeneration",
     ((content ->> 'state'::text))::numeric AS "gameState",
     ((content ->> 'cell_index'::text))::numeric AS "revivedCellIndex",
+        CASE
+            WHEN ("blockIndex" IS NULL) THEN 'PENDING'::text
+            ELSE 'ACCEPTED_ON_L2'::text
+        END AS "txStatus",
         CASE
             WHEN (((content ->> 'state'::text))::numeric = (0)::numeric) THEN true
             ELSE false

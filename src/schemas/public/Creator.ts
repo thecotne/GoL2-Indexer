@@ -9,10 +9,6 @@ export default interface CreatorTable {
 
   transactionType: ColumnType<string | null, never, never>;
 
-  txFinalityStatus: ColumnType<string | null, never, never>;
-
-  txExecutionStatus: ColumnType<string | null, never, never>;
-
   eventIndex: ColumnType<number | null, never, never>;
 
   transactionOwner: ColumnType<string | null, never, never>;
@@ -22,6 +18,8 @@ export default interface CreatorTable {
   gameGeneration: ColumnType<string | null, never, never>;
 
   gameState: ColumnType<string | null, never, never>;
+
+  txStatus: ColumnType<string | null, never, never>;
 
   gameOver: ColumnType<boolean | null, never, never>;
 
