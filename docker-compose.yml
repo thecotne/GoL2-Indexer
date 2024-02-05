@@ -9,7 +9,6 @@ services:
       POSTGRES_PASSWORD: indexer-password
     volumes:
       - ./db/schema.sql:/docker-entrypoint-initdb.d/0-schema.sql
-      - ./db/init-materialized-views.sql:/docker-entrypoint-initdb.d/1-init-materialized-views.sql
     ports:
       - "5432:5432"
   indexer:

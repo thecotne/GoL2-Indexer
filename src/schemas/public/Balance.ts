@@ -3,15 +3,11 @@
 
 import { type ColumnType, type Selectable } from 'kysely';
 
-/** Represents the materializedView public.balance */
+/** Represents the view public.balance */
 export default interface BalanceTable {
-  userId: ColumnType<string | null, never, never>;
+  userId: ColumnType<string, never, never>;
 
-  balance: ColumnType<string | null, never, never>;
-
-  createdAt: ColumnType<Date | null, never, never>;
-
-  updatedAt: ColumnType<Date | null, never, never>;
+  balance: ColumnType<string, never, never>;
 }
 
 export type Balance = Selectable<BalanceTable>;

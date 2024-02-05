@@ -9,6 +9,20 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
+--
+-- Name: moddatetime; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS moddatetime WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION moddatetime; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION moddatetime IS 'functions for tracking last modification time';
+
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
@@ -18,111 +32,141 @@ SET default_table_access_method = heap;
 --
 
 CREATE TABLE public.event (
-    "txHash" character varying(65) NOT NULL,
-    "txIndex" integer NOT NULL,
     "blockHash" character varying(65),
     "blockIndex" integer,
+    "transactionHash" character varying(65) NOT NULL,
+    "transactionIndex" integer NOT NULL,
     "eventIndex" integer NOT NULL,
-    name character varying NOT NULL,
-    content jsonb NOT NULL,
+    "eventName" character varying NOT NULL,
+    "eventData" jsonb NOT NULL,
     "createdAt" timestamp without time zone DEFAULT now() NOT NULL,
-    "updatedAt" timestamp without time zone
+    "updatedAt" timestamp without time zone DEFAULT now() NOT NULL
 );
 
 
 --
--- Name: balance; Type: MATERIALIZED VIEW; Schema: public; Owner: -
+-- Name: transfer_events; Type: VIEW; Schema: public; Owner: -
 --
 
-CREATE MATERIALIZED VIEW public.balance AS
- WITH transfers AS (
-         SELECT ((event.content ->> 'to'::text))::numeric AS "to",
-            ((event.content ->> 'from_'::text))::numeric AS "from",
-            ((event.content ->> 'value'::text))::numeric AS value,
-            event."createdAt"
-           FROM public.event
-          WHERE ((event.name)::text = 'Transfer'::text)
-        ), incoming AS (
-         SELECT transfers."to",
-            sum(transfers.value) AS incoming_credits,
-            min(transfers."createdAt") AS oldesttransaction,
-            max(transfers."createdAt") AS newesttransaction
-           FROM transfers
-          GROUP BY transfers."to"
-        ), outgoing AS (
-         SELECT transfers."from",
-            sum(transfers.value) AS outgoing_credits,
-            min(transfers."createdAt") AS oldesttransaction,
-            max(transfers."createdAt") AS newesttransaction
-           FROM transfers
-          GROUP BY transfers."from"
-        )
- SELECT incoming."to" AS "userId",
-    (incoming.incoming_credits - COALESCE(outgoing.outgoing_credits, (0)::numeric)) AS balance,
-        CASE
-            WHEN (incoming.oldesttransaction > outgoing.oldesttransaction) THEN outgoing.oldesttransaction
-            ELSE incoming.oldesttransaction
-        END AS "createdAt",
-        CASE
-            WHEN (incoming.newesttransaction < outgoing.newesttransaction) THEN outgoing.newesttransaction
-            ELSE incoming.newesttransaction
-        END AS "updatedAt"
-   FROM (incoming
-     LEFT JOIN outgoing ON ((incoming."to" = outgoing."from")))
-  WHERE (incoming."to" <> '0'::numeric)
-  WITH NO DATA;
-
-
---
--- Name: creator; Type: MATERIALIZED VIEW; Schema: public; Owner: -
---
-
-CREATE MATERIALIZED VIEW public.creator AS
- SELECT "txHash" AS "transactionHash",
-    name AS "transactionType",
+CREATE VIEW public.transfer_events AS
+ SELECT ("eventData" ->> 'from'::text) AS "transferFrom",
+    ("eventData" ->> 'to'::text) AS "transferTo",
+    (("eventData" ->> 'value'::text))::numeric AS "transferAmount",
+    "blockHash",
+    "blockIndex",
+    "transactionHash",
+    "transactionIndex",
     "eventIndex",
-    ((content ->> 'user_id'::text))::numeric AS "transactionOwner",
-    ((content ->> 'game_id'::text))::numeric AS "gameId",
-    ((content ->> 'generation'::text))::numeric AS "gameGeneration",
-    ((content ->> 'state'::text))::numeric AS "gameState",
-        CASE
-            WHEN ("blockIndex" IS NULL) THEN 'PENDING'::text
-            ELSE 'ACCEPTED_ON_L2'::text
-        END AS "txStatus",
-        CASE
-            WHEN (((content ->> 'state'::text))::numeric = (0)::numeric) THEN true
-            ELSE false
-        END AS "gameOver",
-    "createdAt"
+    "createdAt",
+    "updatedAt"
    FROM public.event
-  WHERE (((name)::text = ANY (ARRAY[('game_evolved'::character varying)::text, ('game_created'::character varying)::text])) AND (((content ->> 'game_id'::text))::numeric <> '39132555273291485155644251043342963441664'::numeric))
-  WITH NO DATA;
+  WHERE (("eventName")::text = 'Transfer'::text)
+  ORDER BY "blockIndex" DESC, "transactionIndex" DESC, "eventIndex" DESC;
 
 
 --
--- Name: infinite; Type: MATERIALIZED VIEW; Schema: public; Owner: -
+-- Name: balance_events; Type: VIEW; Schema: public; Owner: -
 --
 
-CREATE MATERIALIZED VIEW public.infinite AS
- SELECT "txHash" AS "transactionHash",
-    name AS "transactionType",
+CREATE VIEW public.balance_events AS
+ SELECT transfer_events."transferTo" AS "userId",
+    transfer_events."transferAmount" AS balance,
+    transfer_events."blockHash",
+    transfer_events."blockIndex",
+    transfer_events."transactionHash",
+    transfer_events."transactionIndex",
+    transfer_events."eventIndex",
+    transfer_events."createdAt",
+    transfer_events."updatedAt"
+   FROM public.transfer_events
+UNION ALL
+ SELECT transfer_events."transferFrom" AS "userId",
+    ((0)::numeric - transfer_events."transferAmount") AS balance,
+    transfer_events."blockHash",
+    transfer_events."blockIndex",
+    transfer_events."transactionHash",
+    transfer_events."transactionIndex",
+    transfer_events."eventIndex",
+    transfer_events."createdAt",
+    transfer_events."updatedAt"
+   FROM public.transfer_events;
+
+
+--
+-- Name: balance; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.balance AS
+ SELECT "userId",
+    sum(balance) AS balance
+   FROM public.balance_events
+  GROUP BY "userId";
+
+
+--
+-- Name: game_events; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.game_events AS
+ SELECT "blockHash",
+    "blockIndex",
+    "transactionHash",
+    "transactionIndex",
+    ("eventData" ->> 'user_id'::text) AS "transactionOwner",
+        CASE "blockIndex"
+            WHEN NULL::integer THEN 'PENDING'::text
+            ELSE 'ACCEPTED_ON_L2'::text
+        END AS "transactionStatus",
     "eventIndex",
-    ((content ->> 'user_id'::text))::numeric AS "transactionOwner",
-    ((content ->> 'generation'::text))::numeric AS "gameGeneration",
-    ((content ->> 'state'::text))::numeric AS "gameState",
-    ((content ->> 'cell_index'::text))::numeric AS "revivedCellIndex",
+    "eventName",
+    "eventData",
+    "createdAt",
+    "updatedAt",
         CASE
-            WHEN ("blockIndex" IS NULL) THEN 'PENDING'::text
-            ELSE 'ACCEPTED_ON_L2'::text
-        END AS "txStatus",
+            WHEN ("eventData" ? 'game_id'::text) THEN ("eventData" ->> 'game_id'::text)
+            ELSE '0x7300100008000000000000000000000000'::text
+        END AS "gameId",
         CASE
-            WHEN (((content ->> 'state'::text))::numeric = (0)::numeric) THEN true
-            ELSE false
-        END AS "gameExtinct",
-    "createdAt"
+            WHEN ("eventData" ? 'generation'::text) THEN (("eventData" ->> 'generation'::text))::numeric
+            ELSE (1)::numeric
+        END AS "gameGeneration",
+    (("eventData" ->> 'state'::text))::numeric AS "gameState",
+    (("eventData" ->> 'cell_index'::text))::numeric AS "revivedCellIndex",
+    ((("eventData" ->> 'state'::text))::numeric = (0)::numeric) AS "gameOver"
    FROM public.event
-  WHERE ((((name)::text = ANY (ARRAY[('game_evolved'::character varying)::text, ('game_created'::character varying)::text])) AND (((content ->> 'game_id'::text))::numeric = '39132555273291485155644251043342963441664'::numeric)) OR ((name)::text = 'cell_revived'::text))
-  WITH NO DATA;
+  WHERE (("eventName")::text = ANY ((ARRAY['GameCreated'::character varying, 'GameEvolved'::character varying, 'CellRevived'::character varying])::text[]))
+  ORDER BY "blockIndex" DESC, "transactionIndex" DESC, "eventIndex" DESC;
+
+
+--
+-- Name: game_state; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.game_state AS
+ SELECT "gameId",
+    "gameGeneration",
+    "gameState",
+    ("gameState" = (0)::numeric) AS "gameOver",
+    ( SELECT jsonb_agg(jsonb_build_object('cell_index', rci."revivedCellIndex", 'user_id', rci."transactionOwner")) AS jsonb_agg
+           FROM public.game_events rci
+          WHERE ((rci."gameId" = e."gameId") AND (rci."gameGeneration" = e."gameGeneration") AND ((rci."eventName")::text = 'CellRevived'::text))) AS "revivedCells"
+   FROM public.game_events e
+  WHERE (("eventName")::text = ANY ((ARRAY['GameCreated'::character varying, 'GameEvolved'::character varying])::text[]))
+  ORDER BY "blockIndex" DESC, "transactionIndex" DESC, "eventIndex" DESC;
+
+
+--
+-- Name: game; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW public.game AS
+ SELECT DISTINCT ON ("gameId") "gameId",
+    "gameGeneration",
+    "gameState",
+    "gameOver",
+    "revivedCells"
+   FROM public.game_state
+  ORDER BY "gameId", "gameGeneration" DESC;
 
 
 --
@@ -135,29 +179,11 @@ CREATE TABLE public.schema_migrations (
 
 
 --
--- Name: transaction; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.transaction (
-    hash character varying(65) NOT NULL,
-    "finalityStatus" character varying NOT NULL,
-    "executionStatus" character varying,
-    "createdAt" timestamp without time zone DEFAULT now() NOT NULL,
-    "updatedAt" timestamp without time zone,
-    "functionName" character varying NOT NULL,
-    "functionCaller" numeric NOT NULL,
-    "functionInputCellIndex" integer,
-    "functionInputGameState" numeric,
-    "functionInputGameId" numeric
-);
-
-
---
 -- Name: event event_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.event
-    ADD CONSTRAINT event_pkey PRIMARY KEY ("txHash", "eventIndex");
+    ADD CONSTRAINT event_pkey PRIMARY KEY ("transactionHash", "eventIndex");
 
 
 --
@@ -169,32 +195,10 @@ ALTER TABLE ONLY public.schema_migrations
 
 
 --
--- Name: transaction transaction_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: event mdt_event; Type: TRIGGER; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.transaction
-    ADD CONSTRAINT transaction_pkey PRIMARY KEY (hash);
-
-
---
--- Name: balance_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX balance_idx ON public.balance USING btree ("userId");
-
-
---
--- Name: creator_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX creator_idx ON public.creator USING btree ("transactionHash", "eventIndex");
-
-
---
--- Name: infinite_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX infinite_idx ON public.infinite USING btree ("transactionHash", "eventIndex");
+CREATE TRIGGER mdt_event BEFORE UPDATE ON public.event FOR EACH ROW EXECUTE FUNCTION public.moddatetime('updatedAt');
 
 
 --
@@ -207,4 +211,6 @@ CREATE UNIQUE INDEX infinite_idx ON public.infinite USING btree ("transactionHas
 --
 
 INSERT INTO public.schema_migrations (version) VALUES
-    ('20240113081901');
+    ('20240204202436'),
+    ('20240204202447'),
+    ('20240204204718');

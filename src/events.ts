@@ -9,10 +9,15 @@ import {
   hash,
   num,
   uint256,
+  BigNumberish,
+  Uint256,
 } from "starknet";
 import { db, env, log, starknet } from "./env";
-import { EventEventIndex, EventTxHash, NewEvent } from "./schemas/public/Event";
-import { refreshMaterializedViews } from "./views";
+import {
+  EventEventIndex,
+  EventTransactionHash,
+  NewEvent,
+} from "./schemas/public/Event";
 
 // --- contract classes ---
 const contractClasses: Map<string, ContractClassResponse> = new Map();
@@ -21,23 +26,23 @@ async function prepareContractClasses() {
   await prepareContractClass(
     await starknet.getClassHashAt(
       env.CONTRACT_ADDRESS,
-      env.CONTRACT_BLOCK_NUMBER,
-    ),
+      env.CONTRACT_BLOCK_NUMBER
+    )
   );
 
   await prepareContractClass(
-    await starknet.getClassHashAt(env.CONTRACT_ADDRESS, "latest"),
+    await starknet.getClassHashAt(env.CONTRACT_ADDRESS, "latest")
   );
 
   const upgradeEvents = await db
     .selectFrom("event")
     .selectAll()
-    .where("event.name", "=", "Upgraded")
+    .where("event.eventName", "=", "Upgraded")
     .execute();
 
   for (const upgradeEvent of upgradeEvents) {
     const implementation = num.toHex(
-      (upgradeEvent.content as { implementation: string }).implementation,
+      (upgradeEvent.eventData as { implementation: string }).implementation
     );
 
     if (typeof implementation === "string") {
@@ -64,7 +69,7 @@ function parseEvent(event: Event): ParsedEvent {
           [JSON.parse(JSON.stringify(event))],
           events.getAbiEvents(legacyFormatAbi),
           CallData.getAbiStruct(legacyFormatAbi),
-          CallData.getAbiEnum(legacyFormatAbi),
+          CallData.getAbiEnum(legacyFormatAbi)
         )
         .at(0);
 
@@ -76,15 +81,101 @@ function parseEvent(event: Event): ParsedEvent {
 
   throw new Error("Failed to parse event.");
 }
+// type BigNumberish = string | number | bigint;
+// interface Uint256 {
+//   low: BigNumberish;
+//   high: BigNumberish;
+// }
+// type ParsedStruct = {
+//   [key: string]: BigNumberish | BigNumberish[] | ParsedStruct | Uint256;
+// };
+
+function isUint256(value: object): value is Uint256 {
+  return (
+    "low" in value &&
+    (typeof value.low === "bigint" ||
+      typeof value.low === "string" ||
+      typeof value.low === "number") &&
+    "high" in value &&
+    (typeof value.high === "bigint" ||
+      typeof value.high === "string" ||
+      typeof value.high === "number") &&
+    Object.keys(value).length === 2
+  );
+}
+
+type ParsedStructBigInt = {
+  [key: string]: bigint | bigint[] | ParsedStructBigInt;
+};
+
+function parsedStructToBigInt(parsedStruct: ParsedStruct): ParsedStructBigInt {
+  return Object.fromEntries(
+    Object.entries(parsedStruct).map(([key, value]) => {
+      if (Array.isArray(value)) {
+        return [key, value.map((v) => BigInt(v))];
+      }
+
+      if (typeof value === "object") {
+        if (isUint256(value)) {
+          return [
+            key,
+            uint256.uint256ToBN({
+              low: value.low,
+              high: value.high,
+            }),
+          ];
+        }
+
+        return [key, parsedStructToBigInt(value as ParsedStruct)];
+      }
+
+      return [key, BigInt(value)];
+    })
+  );
+}
+
+type ParsedStructJSON = {
+  [key: string]: (string | number) | (string | number)[] | ParsedStructJSON;
+};
+
+function parsedStructToJSON(
+  parsedStruct: ParsedStructBigInt
+): ParsedStructJSON {
+  return Object.fromEntries(
+    Object.entries(parsedStruct).map(([key, value]) => {
+      if (Array.isArray(value)) {
+        return [key, value.map((v) => v.toString())];
+      }
+
+      if (typeof value === "object") {
+        if (isUint256(value)) {
+          return [
+            key,
+            uint256
+              .uint256ToBN({
+                low: value.low,
+                high: value.high,
+              })
+              .toString(),
+          ];
+        }
+
+        return [key, parsedStructToJSON(value as ParsedStructBigInt)];
+      }
+
+      return [key, value.toString()];
+    })
+  );
+}
 
 interface ParsedEventObject<E extends Event> {
   eventName: string;
-  parsedStruct: ParsedStruct;
+  parsedStruct: ParsedStructJSON;
   event: E;
 }
 
 async function parseEvents<E extends Event>(
-  events: Array<E>,
+  events: Array<E>
 ): Promise<Array<ParsedEventObject<E>>> {
   for (const event of events) {
     if (event.keys[0] === hash.getSelectorFromName("Upgraded")) {
@@ -96,43 +187,42 @@ async function parseEvents<E extends Event>(
     const parsedEvent = parseEvent(event);
 
     const [eventName] = Object.keys(parsedEvent);
-    const parsedStruct = parsedEvent[eventName];
+    const parsedStruct = parsedStructToBigInt(parsedEvent[eventName]);
+    const parsedStructJSON = parsedStructToJSON(parsedStruct);
 
-    for (const [key, value] of Object.entries(parsedStruct)) {
-      if (typeof value === "bigint") {
-        parsedStruct[key] = value.toString();
-      }
-
-      if (typeof value === "object" && "low" in value && "high" in value) {
-        const { low, high } = value;
-        if (typeof low === "bigint" && typeof high === "bigint") {
-          parsedStruct[key] = uint256
-            .uint256ToBN({
-              low,
-              high,
-            })
-            .toString();
-        }
-      }
-    }
-
-    if ("from" in parsedStruct) {
-      parsedStruct.from_ = parsedStruct.from;
+    if ("from_" in parsedStructJSON) {
+      parsedStructJSON.from = parsedStructJSON.from_;
 
       // biome-ignore lint/performance/noDelete: Need to delete the key
-      delete parsedStruct.from;
+      delete parsedStructJSON.from_;
+    }
+
+    if ("game_id" in parsedStruct && typeof parsedStruct.game_id === "bigint") {
+      parsedStructJSON.game_id = num.toHex(parsedStruct.game_id);
+    }
+
+    if ("from" in parsedStructJSON && typeof parsedStructJSON.from === "string") {
+      parsedStructJSON.from = num.toHex(parsedStructJSON.from);
+    }
+
+    if ("to" in parsedStructJSON && typeof parsedStructJSON.to === "string") {
+      parsedStructJSON.to = num.toHex(parsedStructJSON.to);
+    }
+
+    if ("user_id" in parsedStructJSON && typeof parsedStructJSON.user_id === "string") {
+      parsedStructJSON.user_id = num.toHex(parsedStructJSON.user_id);
     }
 
     const eventNameMap = {
-      GameCreated: "game_created",
-      GameEvolved: "game_evolved",
-      CellRevived: "cell_revived",
+      game_created: "GameCreated",
+      game_evolved: "GameEvolved",
+      cell_revived: "CellRevived",
     } as { [key: string]: string };
 
     return {
       event,
       eventName: eventNameMap[eventName] ?? eventName,
-      parsedStruct,
+      parsedStruct: parsedStructJSON,
     };
   });
 
@@ -155,14 +245,13 @@ export async function pullEvents() {
     latestAcceptedBlock.block_number,
     lastEvent?.blockIndex != null
       ? lastEvent.blockIndex
-      : env.CONTRACT_BLOCK_NUMBER,
+      : env.CONTRACT_BLOCK_NUMBER
   );
 
   let eventsChunk: Awaited<ReturnType<typeof starknet.getEvents>> | undefined;
-  let eventsPulled = 0;
   let blockHash: string | null = null; // used to check if the block has changed
   let txHash: string | null = null; // used to check if the transaction has changed
-  let txIndex = -1; // used to track the transaction index
+  let transactionIndex = -1; // used to track the transaction index
   let eventIndex = -1; // used to track the event index
 
   do {
@@ -185,53 +274,52 @@ export async function pullEvents() {
     assert(typeof eventsChunk === "object", "Events chunk is not an object.");
     assert(Array.isArray(eventsChunk.events), "Events chunk is not an array.");
 
-    eventsPulled += eventsChunk.events.length;
-
     if (eventsChunk.events.length > 0) {
       const events = await parseEvents(eventsChunk.events);
 
-      const values: NewEvent[] = events.map(
-        ({ event, eventName, parsedStruct }) => {
-          if (event.transaction_hash !== txHash) {
-            if (event.block_hash !== blockHash) {
-              blockHash = event.block_hash;
-              txIndex = 0;
-            } else {
-              txIndex++;
-            }
-
-            txHash = event.transaction_hash;
-            eventIndex = 0;
-          } else {
-            eventIndex++;
-          }
-
-          return {
-            txHash: event.transaction_hash as EventTxHash,
-            eventIndex: eventIndex as EventEventIndex,
-            blockIndex: event.block_number,
-            name: eventName,
-            content: parsedStruct,
-            txIndex,
-            blockHash: event.block_hash,
-            updatedAt: new Date(),
-            createdAt: new Date(),
-          } satisfies NewEvent;
-        },
-      );
-
       await db
         .insertInto("event")
-        .values(values)
+        .values(
+          events.map(({ event, eventName, parsedStruct }) => {
+            if (event.transaction_hash !== txHash) {
+              if (event.block_hash !== blockHash) {
+                blockHash = event.block_hash;
+                transactionIndex = 0;
+              } else {
+                transactionIndex++;
+              }
+
+              txHash = event.transaction_hash;
+              eventIndex = 0;
+            } else {
+              eventIndex++;
+            }
+
+            return {
+              transactionHash: event.transaction_hash as EventTransactionHash,
+              transactionIndex,
+
+              blockIndex: event.block_number,
+              blockHash: event.block_hash,
+
+              eventIndex: eventIndex as EventEventIndex,
+
+              eventName,
+              eventData: parsedStruct,
+            } satisfies NewEvent;
+          })
+        )
         .onConflict((oc) => {
-          return oc.columns(["txHash", "eventIndex"]).doUpdateSet((eb) => ({
-            blockIndex: eb.ref("excluded.blockIndex"),
-            name: eb.ref("excluded.name"),
-            content: eb.ref("excluded.content"),
-            txIndex: eb.ref("excluded.txIndex"),
-            blockHash: eb.ref("excluded.blockHash"),
-            updatedAt: eb.ref("excluded.updatedAt"),
-          }));
+          return oc
+            .columns(["transactionHash", "eventIndex"])
+            .doUpdateSet((eb) => ({
+              blockIndex: eb.ref("excluded.blockIndex"),
+              eventName: eb.ref("excluded.eventName"),
+              eventData: eb.ref("excluded.eventData"),
+              transactionIndex: eb.ref("excluded.transactionIndex"),
+              blockHash: eb.ref("excluded.blockHash"),
+              updatedAt: eb.ref("excluded.updatedAt"),
+            }));
         })
         .execute();
 
@@ -240,8 +328,4 @@ export async function pullEvents() {
       await new Promise((resolve) => setTimeout(resolve, 3000));
     }
   } while (eventsChunk.continuation_token);
-
-  if (eventsPulled > 0) {
-    await refreshMaterializedViews();
-  }
 }

@@ -4,30 +4,30 @@
 import { type ColumnType, type Selectable, type Insertable, type Updateable } from 'kysely';
 
 /** Identifier type for public.event */
-export type EventTxHash = string & { __brand: 'EventTxHash' };
+export type EventTransactionHash = string & { __brand: 'EventTransactionHash' };
 
 /** Identifier type for public.event */
 export type EventEventIndex = number & { __brand: 'EventEventIndex' };
 
 /** Represents the table public.event */
 export default interface EventTable {
-  txHash: ColumnType<EventTxHash, EventTxHash, EventTxHash>;
+  transactionHash: ColumnType<EventTransactionHash, EventTransactionHash, EventTransactionHash>;
 
   eventIndex: ColumnType<EventEventIndex, EventEventIndex, EventEventIndex>;
-
-  txIndex: ColumnType<number, number, number>;
 
   blockHash: ColumnType<string | null, string | null, string | null>;
 
   blockIndex: ColumnType<number | null, number | null, number | null>;
 
-  name: ColumnType<string, string, string>;
+  transactionIndex: ColumnType<number, number, number>;
 
-  content: ColumnType<unknown, unknown, unknown>;
+  eventName: ColumnType<string, string, string>;
+
+  eventData: ColumnType<unknown, unknown, unknown>;
 
   createdAt: ColumnType<Date, Date | string | undefined, Date | string>;
 
-  updatedAt: ColumnType<Date | null, Date | string | null, Date | string | null>;
+  updatedAt: ColumnType<Date, Date | string | undefined, Date | string>;
 }
 
 export type Event = Selectable<EventTable>;
