@@ -9,12 +9,13 @@ import {
   hash,
   num,
   uint256,
-  BigNumberish,
   Uint256,
 } from "starknet";
-import { db, env, log, starknet } from "./env";
+import { db, log, starknet, starknetMainnet } from "./env";
 import {
+  EventContractAddress,
   EventEventIndex,
+  EventNetworkName,
   EventTransactionHash,
   NewEvent,
 } from "./schemas/public/Event";
@@ -22,22 +23,34 @@ import {
 // --- contract classes ---
 const contractClasses: Map<string, ContractClassResponse> = new Map();
 
-async function prepareContractClasses() {
+async function prepareContractClasses(
+  contractAddress: string,
+  contractBlockNumber: number,
+  networkName: string
+) {
   await prepareContractClass(
-    await starknet.getClassHashAt(
-      env.CONTRACT_ADDRESS,
-      env.CONTRACT_BLOCK_NUMBER
-    )
+    await starknet(networkName).getClassHashAt(
+      contractAddress,
+      contractBlockNumber
+    ),
+    networkName
   );
 
   await prepareContractClass(
-    await starknet.getClassHashAt(env.CONTRACT_ADDRESS, "latest")
+    await starknet(networkName).getClassHashAt(contractAddress, "latest"),
+    networkName
   );
 
   const upgradeEvents = await db
     .selectFrom("event")
     .selectAll()
     .where("event.eventName", "=", "Upgraded")
+    .where(
+      "event.contractAddress",
+      "=",
+      contractAddress as EventContractAddress
+    )
+    .where("event.networkName", "=", networkName as EventNetworkName)
     .execute();
 
   for (const upgradeEvent of upgradeEvents) {
@@ -46,16 +59,19 @@ async function prepareContractClasses() {
     );
 
     if (typeof implementation === "string") {
-      await prepareContractClass(implementation);
+      await prepareContractClass(implementation, networkName);
     }
   }
 }
 
-async function prepareContractClass(classHash: string) {
+async function prepareContractClass(classHash: string, networkName: string) {
   if (!contractClasses.get(classHash)) {
     log.info("Fetching contract class.", { classHash });
 
-    contractClasses.set(classHash, await starknet.getClassByHash(classHash));
+    contractClasses.set(
+      classHash,
+      await starknet(networkName).getClassByHash(classHash)
+    );
   }
 }
 
@@ -81,14 +97,6 @@ function parseEvent(event: Event): ParsedEvent {
 
   throw new Error("Failed to parse event.");
 }
-// type BigNumberish = string | number | bigint;
-// interface Uint256 {
-//   low: BigNumberish;
-//   high: BigNumberish;
-// }
-// type ParsedStruct = {
-//   [key: string]: BigNumberish | BigNumberish[] | ParsedStruct | Uint256;
-// };
 
 function isUint256(value: object): value is Uint256 {
   return (
@@ -175,11 +183,12 @@ interface ParsedEventObject<E extends Event> {
 }
 
 async function parseEvents<E extends Event>(
-  events: Array<E>
+  events: Array<E>,
+  networkName: string
 ): Promise<Array<ParsedEventObject<E>>> {
   for (const event of events) {
     if (event.keys[0] === hash.getSelectorFromName("Upgraded")) {
-      await prepareContractClass(num.toHex(event.data[0]));
+      await prepareContractClass(num.toHex(event.data[0]), networkName);
     }
   }
 
@@ -201,7 +210,10 @@ async function parseEvents<E extends Event>(
       parsedStructJSON.game_id = num.toHex(parsedStruct.game_id);
     }
 
-    if ("from" in parsedStructJSON && typeof parsedStructJSON.from === "string") {
+    if (
+      "from" in parsedStructJSON &&
+      typeof parsedStructJSON.from === "string"
+    ) {
       parsedStructJSON.from = num.toHex(parsedStructJSON.from);
     }
 
@@ -209,7 +221,10 @@ async function parseEvents<E extends Event>(
       parsedStructJSON.to = num.toHex(parsedStructJSON.to);
     }
 
-    if ("user_id" in parsedStructJSON && typeof parsedStructJSON.user_id === "string") {
+    if (
+      "user_id" in parsedStructJSON &&
+      typeof parsedStructJSON.user_id === "string"
+    ) {
       parsedStructJSON.user_id = num.toHex(parsedStructJSON.user_id);
     }
 
@@ -229,35 +244,49 @@ async function parseEvents<E extends Event>(
   return parsedEvents;
 }
 
-export async function pullEvents() {
-  await prepareContractClasses();
+export async function pullEvents(
+  contractAddress: string,
+  contractBlockNumber: number,
+  networkName: string
+) {
+  await prepareContractClasses(
+    contractAddress,
+    contractBlockNumber,
+    networkName
+  );
 
   const lastEvent = await db
     .selectFrom("event")
     .select("blockIndex")
     .where("blockIndex", "is not", null)
+    .where("contractAddress", "=", contractAddress as EventContractAddress)
+    .where("networkName", "=", networkName as EventNetworkName)
     .orderBy("blockIndex", "desc")
     .limit(1)
     .executeTakeFirst();
 
-  const latestAcceptedBlock = await starknet.getBlockLatestAccepted();
+  log.info("Pulled last event.", { lastEvent });
+
+  const latestAcceptedBlock = await starknet(
+    networkName
+  ).getBlockLatestAccepted();
   const blockNumber = Math.min(
     latestAcceptedBlock.block_number,
-    lastEvent?.blockIndex != null
-      ? lastEvent.blockIndex
-      : env.CONTRACT_BLOCK_NUMBER
+    lastEvent?.blockIndex != null ? lastEvent.blockIndex : contractBlockNumber
   );
 
-  let eventsChunk: Awaited<ReturnType<typeof starknet.getEvents>> | undefined;
+  let eventsChunk:
+    | Awaited<ReturnType<typeof starknetMainnet.getEvents>>
+    | undefined;
   let blockHash: string | null = null; // used to check if the block has changed
   let txHash: string | null = null; // used to check if the transaction has changed
   let transactionIndex = -1; // used to track the transaction index
   let eventIndex = -1; // used to track the event index
 
   do {
-    eventsChunk = await starknet.getEvents({
+    eventsChunk = await starknet(networkName).getEvents({
       chunk_size: 1000,
-      address: env.CONTRACT_ADDRESS,
+      address: contractAddress,
       from_block: {
         block_number: blockNumber,
       },
@@ -268,6 +297,10 @@ export async function pullEvents() {
     log.info("Pulled events chunk.", {
       continuation_token: eventsChunk?.continuation_token,
       events: eventsChunk.events.length,
+      contractAddress,
+      networkName,
+      blockNumber,
+      latestAcceptedBlockNumber: latestAcceptedBlock.block_number,
     });
 
     assert(eventsChunk != null, "Events chunk is null.");
@@ -275,7 +308,7 @@ export async function pullEvents() {
     assert(Array.isArray(eventsChunk.events), "Events chunk is not an array.");
 
     if (eventsChunk.events.length > 0) {
-      const events = await parseEvents(eventsChunk.events);
+      const events = await parseEvents(eventsChunk.events, networkName);
 
       await db
         .insertInto("event")
@@ -296,6 +329,8 @@ export async function pullEvents() {
             }
 
             return {
+              networkName: networkName as EventNetworkName,
+              contractAddress: event.from_address as EventContractAddress,
               transactionHash: event.transaction_hash as EventTransactionHash,
               transactionIndex,
 
@@ -311,7 +346,12 @@ export async function pullEvents() {
         )
         .onConflict((oc) => {
           return oc
-            .columns(["transactionHash", "eventIndex"])
+            .columns([
+              "networkName",
+              "contractAddress",
+              "transactionHash",
+              "eventIndex",
+            ])
             .doUpdateSet((eb) => ({
               blockIndex: eb.ref("excluded.blockIndex"),
               eventName: eb.ref("excluded.eventName"),
@@ -325,7 +365,7 @@ export async function pullEvents() {
 
       log.info("Inserted events.", { events: eventsChunk.events.length });
 
-      await new Promise((resolve) => setTimeout(resolve, 3000));
+      // await new Promise((resolve) => setTimeout(resolve, 3000));
     }
   } while (eventsChunk.continuation_token);
 }

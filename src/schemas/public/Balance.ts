@@ -5,9 +5,13 @@ import { type ColumnType, type Selectable } from 'kysely';
 
 /** Represents the view public.balance */
 export default interface BalanceTable {
+  balance: ColumnType<string, never, never>;
+
   userId: ColumnType<string, never, never>;
 
-  balance: ColumnType<string, never, never>;
+  networkName: ColumnType<string, never, never>;
+
+  contractAddress: ColumnType<string, never, never>;
 }
 
 export type Balance = Selectable<BalanceTable>;

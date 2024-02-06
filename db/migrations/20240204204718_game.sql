@@ -1,73 +1,82 @@
 -- migrate:up
-CREATE VIEW public.game_events AS (
-  SELECT event."blockHash",
-    event."blockIndex",
-    event."transactionHash",
-    event."transactionIndex",
-    event."eventData"->>'user_id' AS "transactionOwner",
-    CASE
-      event."blockIndex"
-      WHEN NULL THEN 'PENDING'
-      ELSE 'ACCEPTED_ON_L2'
-    END as "transactionStatus",
-    event."eventIndex",
-    event."eventName",
-    event."eventData",
-    event."createdAt",
-    event."updatedAt",
-    CASE
-      WHEN event."eventData" ? 'game_id' THEN event."eventData"->>'game_id'
-      ELSE '0x7300100008000000000000000000000000'
-    END as "gameId",
-    CASE
-      WHEN event."eventData" ? 'generation' THEN (event."eventData"->>'generation')::numeric
-      ELSE 1
-    END as "gameGeneration",
-    (event."eventData"->>'state')::numeric AS "gameState",
-    (event."eventData"->>'cell_index')::numeric AS "revivedCellIndex",
-    (event."eventData"->>'state')::numeric = 0 as "gameOver"
-  FROM public.event
-  WHERE event."eventName" in (
+CREATE VIEW public.game_event AS (
+  SELECT *
+  FROM public.event e
+  WHERE "eventName" in (
       'GameCreated',
       'GameEvolved',
       'CellRevived'
     )
-  order by event."blockIndex" desc,
-    event."transactionIndex" desc,
-    event."eventIndex" desc
+  order by "blockIndex" desc,
+    "transactionIndex" desc,
+    "eventIndex" desc
+);
+CREATE VIEW public.game_revived_cells AS (
+  SELECT "networkName",
+    "contractAddress",
+    "gameGeneration",
+    ARRAY_AGG("revivedCellIndex") as "revivedCellIndexes",
+    ARRAY_AGG("transactionOwner") as "revivedCellOwners"
+  FROM public.event
+  WHERE "eventName" = 'CellRevived'
+  GROUP BY "networkName",
+    "contractAddress",
+    "gameGeneration"
 );
 CREATE VIEW public.game_state AS (
-  SELECT e."gameId",
-    e."gameGeneration",
-    e."gameState",
-    e."gameState" = 0 as "gameOver",
-    (
-      SELECT jsonb_agg(
-          jsonb_build_object(
-            'cell_index',
-            rci."revivedCellIndex",
-            'user_id',
-            rci."transactionOwner"
-          )
-        )
-      from public.game_events rci
-      WHERE rci."gameId" = e."gameId"
-        AND rci."gameGeneration" = e."gameGeneration"
-        AND rci."eventName" = 'CellRevived'
-    ) as "revivedCells"
-  FROM public.game_events e
+  SELECT e.*,
+    r."revivedCellIndexes",
+    r."revivedCellOwners"
+  FROM public.event e
+    LEFT JOIN public.game_revived_cells r ON e."gameId" = '0x7300100008000000000000000000000000'
+    AND e."networkName" = r."networkName"
+    AND e."contractAddress" = r."contractAddress"
+    AND e."gameGeneration" = r."gameGeneration"
   WHERE "eventName" in ('GameCreated', 'GameEvolved')
-  ORDER BY "blockIndex" DESC,
-    "transactionIndex" DESC,
-    "eventIndex" DESC
+  ORDER BY "blockIndex" desc,
+    "transactionIndex" desc,
+    "eventIndex" desc
+);
+CREATE VIEW public.game_current_generation AS (
+  SELECT max("gameGeneration") as "gameGeneration",
+    "networkName",
+    "contractAddress",
+    "gameId"
+  FROM public.event
+  GROUP BY "networkName",
+    "contractAddress",
+    "gameId"
 );
 CREATE VIEW public.game AS (
-  SELECT distinct on ("gameId") *
-  FROM public.game_state
-  ORDER BY "gameId",
-    "gameGeneration" DESC
+  SELECT e."networkName",
+    e."contractAddress",
+    e."gameId",
+    e."transactionOwner" as "gameOwner",
+    s."gameGeneration",
+    s."gameState",
+    s."gameOver",
+    s."blockIndex",
+    s."transactionIndex",
+    s."eventIndex",
+    s."revivedCellIndexes",
+    s."revivedCellOwners"
+  FROM public.event e
+    JOIN public.game_current_generation g ON g."networkName" = e."networkName"
+    AND g."contractAddress" = e."contractAddress"
+    AND g."gameId" = e."gameId"
+    JOIN public.game_state s ON s."networkName" = e."networkName"
+    AND s."contractAddress" = e."contractAddress"
+    AND s."gameId" = e."gameId"
+    AND s."gameGeneration" = g."gameGeneration"
+  WHERE e."eventName" = 'GameCreated'
+  ORDER BY s."blockIndex" desc,
+    s."transactionIndex" desc,
+    s."eventIndex" desc
 );
 -- migrate:down
 DROP VIEW public.game;
+DROP VIEW public.game_current_generation;
 DROP VIEW public.game_state;
-DROP VIEW public.game_events;
+DROP VIEW public.game_revived_cells;
+DROP VIEW public.game_event;
+

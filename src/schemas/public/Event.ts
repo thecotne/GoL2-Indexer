@@ -4,6 +4,12 @@
 import { type ColumnType, type Selectable, type Insertable, type Updateable } from 'kysely';
 
 /** Identifier type for public.event */
+export type EventNetworkName = string & { __brand: 'EventNetworkName' };
+
+/** Identifier type for public.event */
+export type EventContractAddress = string & { __brand: 'EventContractAddress' };
+
+/** Identifier type for public.event */
 export type EventTransactionHash = string & { __brand: 'EventTransactionHash' };
 
 /** Identifier type for public.event */
@@ -11,6 +17,10 @@ export type EventEventIndex = number & { __brand: 'EventEventIndex' };
 
 /** Represents the table public.event */
 export default interface EventTable {
+  networkName: ColumnType<EventNetworkName, EventNetworkName, EventNetworkName>;
+
+  contractAddress: ColumnType<EventContractAddress, EventContractAddress, EventContractAddress>;
+
   transactionHash: ColumnType<EventTransactionHash, EventTransactionHash, EventTransactionHash>;
 
   eventIndex: ColumnType<EventEventIndex, EventEventIndex, EventEventIndex>;
@@ -28,6 +38,26 @@ export default interface EventTable {
   createdAt: ColumnType<Date, Date | string | undefined, Date | string>;
 
   updatedAt: ColumnType<Date, Date | string | undefined, Date | string>;
+
+  transferFrom: ColumnType<string | null, never, never>;
+
+  transferTo: ColumnType<string | null, never, never>;
+
+  transferAmount: ColumnType<string | null, never, never>;
+
+  transactionOwner: ColumnType<string | null, never, never>;
+
+  transactionStatus: ColumnType<string | null, never, never>;
+
+  gameId: ColumnType<string | null, never, never>;
+
+  gameGeneration: ColumnType<string | null, never, never>;
+
+  gameState: ColumnType<string | null, never, never>;
+
+  revivedCellIndex: ColumnType<string | null, never, never>;
+
+  gameOver: ColumnType<boolean | null, never, never>;
 }
 
 export type Event = Selectable<EventTable>;

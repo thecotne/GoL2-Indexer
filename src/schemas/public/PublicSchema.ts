@@ -3,11 +3,11 @@
 
 import { type default as SchemaMigrationsTable } from './SchemaMigrations';
 import { type default as EventTable } from './Event';
-import { type default as TransferEventsTable } from './TransferEvents';
-import { type default as BalanceEventsTable } from './BalanceEvents';
 import { type default as BalanceTable } from './Balance';
-import { type default as GameEventsTable } from './GameEvents';
+import { type default as GameEventTable } from './GameEvent';
+import { type default as GameRevivedCellsTable } from './GameRevivedCells';
 import { type default as GameStateTable } from './GameState';
+import { type default as GameCurrentGenerationTable } from './GameCurrentGeneration';
 import { type default as GameTable } from './Game';
 
 export default interface PublicSchema {
@@ -15,15 +15,15 @@ export default interface PublicSchema {
 
   event: EventTable;
 
-  transfer_events: TransferEventsTable;
-
-  balance_events: BalanceEventsTable;
-
   balance: BalanceTable;
 
-  game_events: GameEventsTable;
+  game_event: GameEventTable;
+
+  game_revived_cells: GameRevivedCellsTable;
 
   game_state: GameStateTable;
+
+  game_current_generation: GameCurrentGenerationTable;
 
   game: GameTable;
 }

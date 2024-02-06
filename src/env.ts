@@ -2,7 +2,7 @@ import "dotenv/config";
 
 import { Kysely, PostgresDialect } from "kysely";
 import pg from "pg";
-import { RpcProvider } from "starknet";
+import { RpcProvider, num } from "starknet";
 import { createLogger, format, transports } from "winston";
 import { parseEnv } from "znv";
 import { z } from "zod";
@@ -11,21 +11,40 @@ import PublicSchema from "./schemas/public/PublicSchema";
 export const env = parseEnv(process.env, {
   DATABASE_URL: z.string(),
   INFURA_API_KEY: z.string().nullable(),
-  CONTRACT_ADDRESS: z.string(),
-  CONTRACT_BLOCK_NUMBER: z.number(),
-  STARKNET_NETWORK_NAME: z.enum(["SN_MAIN", "SN_GOERLI", "SN_SEPOLIA"]),
+  INDEXER_CONFIG: z.string(),
   LOG_LEVEL: z
     .enum(["trace", "debug", "info", "warn", "error", "fatal"])
     .default("info"),
 });
 
-export const starknet = new RpcProvider({
+export const contracts = env.INDEXER_CONFIG.replace(/^\s*#.*/gm, "")
+  .trim()
+  .split(/\s*\n\s*/)
+  .map((x) => {
+    const [networkName, blockNumber, contractAddress] = x.trim().split(/\s+/);
+
+    return {
+      networkName,
+      blockNumber: parseInt(blockNumber),
+      contractAddress: num.cleanHex(contractAddress),
+    };
+  });
+
+export const starknetGoerli = new RpcProvider({
   nodeUrl: env.INFURA_API_KEY
-    ? `https://starknet-${
-        env.STARKNET_NETWORK_NAME === "SN_MAIN" ? "mainnet" : "goerli"
-      }.infura.io/v3/${env.INFURA_API_KEY}`
-    : env.STARKNET_NETWORK_NAME,
+    ? `https://starknet-goerli.infura.io/v3/${env.INFURA_API_KEY}`
+    : "SN_GOERLI",
 });
+
+export const starknetMainnet = new RpcProvider({
+  nodeUrl: env.INFURA_API_KEY
+    ? `https://starknet-mainnet.infura.io/v3/${env.INFURA_API_KEY}`
+    : "SN_MAINNET",
+});
+
+export function starknet(provider: string) {
+  return provider === "SN_GOERLI" ? starknetGoerli : starknetMainnet;
+}
 
 export const db = new Kysely<PublicSchema>({
   dialect: new PostgresDialect({
@@ -54,8 +73,8 @@ export const log = createLogger({
     format.splat(),
     format.printf(
       ({ timestamp, level, message, ...obj }) =>
-        `${timestamp} ${level}: ${message} ${JSON.stringify(obj, null, 2)}`,
-    ),
+        `${timestamp} ${level}: ${message} ${JSON.stringify(obj, null, 2)}`
+    )
   ),
   transports: [new transports.Console()],
 });

@@ -4,8 +4,8 @@
 import { type EventNetworkName, type EventContractAddress, type EventTransactionHash, type EventEventIndex } from './Event';
 import { type ColumnType, type Selectable } from 'kysely';
 
-/** Represents the view public.game_state */
-export default interface GameStateTable {
+/** Represents the view public.game_event */
+export default interface GameEventTable {
   networkName: ColumnType<EventNetworkName, never, never>;
 
   contractAddress: ColumnType<EventContractAddress, never, never>;
@@ -47,10 +47,6 @@ export default interface GameStateTable {
   revivedCellIndex: ColumnType<string | null, never, never>;
 
   gameOver: ColumnType<boolean | null, never, never>;
-
-  revivedCellIndexes: ColumnType<string[], never, never>;
-
-  revivedCellOwners: ColumnType<string[], never, never>;
 }
 
-export type GameState = Selectable<GameStateTable>;
+export type GameEvent = Selectable<GameEventTable>;
