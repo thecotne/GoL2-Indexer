@@ -5,19 +5,24 @@
 - `source ./setup-install.sh` - install nvm, node and pnpm.
 - `source ./setup-update.sh` - install up-to-date versions of nvm, node and pnpm.
 - `pnpm dbmate up` - create the database and run migrations
+- `pnpm pgcli` - connect to the database with pgcli
 - `pnpm build` - build the project
+- `pnpm kanel` - generate types from the database
 - `pnpm dev` - start the project
 - `pnpm debug` - start the project with debug logs
 - `pnpm clean` - remove `dist`
+- `pnpm check` - check the code
+- `pnpm fix` - check and fromat the code
 - `docker compose up --build` - start the project with docker
 - `docker compose up -d` - start the project with docker in detached mode
 - `docker compose up db -d` - start the database with docker
 - `docker compose rm --stop` - stop and remove the project with docker
-- `pnpm dotenv -- pnpm -c exec 'pgcli "$DATABASE_URL"'` - connect to the database with pgcli
-- `pnpm update-db-types` - update the database schema
-- `biome check --apply .` - check and format the code
 
 ## Env variables
+
+- `DBMATE_MIGRATIONS_DIR` - The directory where the migrations are located
+- `DBMATE_SCHEMA_FILE` - The file where the schema is located
+- `INFURA_API_KEY` - The Infura API key
 - `DATABASE_URL` - Database connection string
 - `CONTRACT_ADDRESS` - The contract address
   - [0x06dc4bd1212e67fd05b456a34b24a060c45aad08ab95843c42af31f86c7bd093](https://testnet.starkscan.co/contract/0x06dc4bd1212e67fd05b456a34b24a060c45aad08ab95843c42af31f86c7bd093) for old contract on Goerli

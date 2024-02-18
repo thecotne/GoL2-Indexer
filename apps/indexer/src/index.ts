@@ -11,7 +11,11 @@ async function main() {
       log.info("Pulling events.", contracts);
 
       for (const { networkName, blockNumber, contractAddress } of contracts) {
-        log.info("Pulling events.", { networkName, blockNumber, contractAddress });
+        log.info("Pulling events.", {
+          networkName,
+          blockNumber,
+          contractAddress,
+        });
 
         await pullEvents(contractAddress, blockNumber, networkName);
       }

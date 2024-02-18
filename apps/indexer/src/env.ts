@@ -1,12 +1,17 @@
-import "dotenv/config";
-
 import { Kysely, PostgresDialect } from "kysely";
 import pg from "pg";
 import { RpcProvider, num } from "starknet";
 import { createLogger, format, transports } from "winston";
 import { parseEnv } from "znv";
 import { z } from "zod";
-import PublicSchema from "./schemas/public/PublicSchema";
+import PublicSchema from "./schemas/Database";
+
+if (process.env.NODE_ENV !== "production") {
+  const dotenv = await import("dotenv");
+  const path = await import("path");
+
+  dotenv.config({ path: path.resolve(process.cwd(), "../../.env") });
+}
 
 export const env = parseEnv(process.env, {
   DATABASE_URL: z.string(),

@@ -6,10 +6,10 @@ import {
   Event,
   ParsedEvent,
   ParsedStruct,
+  Uint256,
   hash,
   num,
   uint256,
-  Uint256,
 } from "starknet";
 import { db, log, starknet, starknetMainnet } from "./env";
 import {
@@ -26,19 +26,19 @@ const contractClasses: Map<string, ContractClassResponse> = new Map();
 async function prepareContractClasses(
   contractAddress: string,
   contractBlockNumber: number,
-  networkName: string
+  networkName: string,
 ) {
   await prepareContractClass(
     await starknet(networkName).getClassHashAt(
       contractAddress,
-      contractBlockNumber
+      contractBlockNumber,
     ),
-    networkName
+    networkName,
   );
 
   await prepareContractClass(
     await starknet(networkName).getClassHashAt(contractAddress, "latest"),
-    networkName
+    networkName,
   );
 
   const upgradeEvents = await db
@@ -48,14 +48,14 @@ async function prepareContractClasses(
     .where(
       "event.contractAddress",
       "=",
-      contractAddress as EventContractAddress
+      contractAddress as EventContractAddress,
     )
     .where("event.networkName", "=", networkName as EventNetworkName)
     .execute();
 
   for (const upgradeEvent of upgradeEvents) {
     const implementation = num.toHex(
-      (upgradeEvent.eventData as { implementation: string }).implementation
+      (upgradeEvent.eventData as { implementation: string }).implementation,
     );
 
     if (typeof implementation === "string") {
@@ -70,7 +70,7 @@ async function prepareContractClass(classHash: string, networkName: string) {
 
     contractClasses.set(
       classHash,
-      await starknet(networkName).getClassByHash(classHash)
+      await starknet(networkName).getClassByHash(classHash),
     );
   }
 }
@@ -85,7 +85,7 @@ function parseEvent(event: Event): ParsedEvent {
           [JSON.parse(JSON.stringify(event))],
           events.getAbiEvents(legacyFormatAbi),
           CallData.getAbiStruct(legacyFormatAbi),
-          CallData.getAbiEnum(legacyFormatAbi)
+          CallData.getAbiEnum(legacyFormatAbi),
         )
         .at(0);
 
@@ -138,7 +138,7 @@ function parsedStructToBigInt(parsedStruct: ParsedStruct): ParsedStructBigInt {
       }
 
       return [key, BigInt(value)];
-    })
+    }),
   );
 }
 
@@ -147,7 +147,7 @@ type ParsedStructJSON = {
 };
 
 function parsedStructToJSON(
-  parsedStruct: ParsedStructBigInt
+  parsedStruct: ParsedStructBigInt,
 ): ParsedStructJSON {
   return Object.fromEntries(
     Object.entries(parsedStruct).map(([key, value]) => {
@@ -172,7 +172,7 @@ function parsedStructToJSON(
       }
 
       return [key, value.toString()];
-    })
+    }),
   );
 }
 
@@ -184,7 +184,7 @@ interface ParsedEventObject<E extends Event> {
 
 async function parseEvents<E extends Event>(
   events: Array<E>,
-  networkName: string
+  networkName: string,
 ): Promise<Array<ParsedEventObject<E>>> {
   for (const event of events) {
     if (event.keys[0] === hash.getSelectorFromName("Upgraded")) {
@@ -247,12 +247,12 @@ async function parseEvents<E extends Event>(
 export async function pullEvents(
   contractAddress: string,
   contractBlockNumber: number,
-  networkName: string
+  networkName: string,
 ) {
   await prepareContractClasses(
     contractAddress,
     contractBlockNumber,
-    networkName
+    networkName,
   );
 
   const lastEvent = await db
@@ -267,12 +267,11 @@ export async function pullEvents(
 
   log.info("Pulled last event.", { lastEvent });
 
-  const latestAcceptedBlock = await starknet(
-    networkName
-  ).getBlockLatestAccepted();
+  const latestAcceptedBlock =
+    await starknet(networkName).getBlockLatestAccepted();
   const blockNumber = Math.min(
     latestAcceptedBlock.block_number,
-    lastEvent?.blockIndex != null ? lastEvent.blockIndex : contractBlockNumber
+    lastEvent?.blockIndex != null ? lastEvent.blockIndex : contractBlockNumber,
   );
 
   let eventsChunk:
@@ -342,7 +341,7 @@ export async function pullEvents(
               eventName,
               eventData: parsedStruct,
             } satisfies NewEvent;
-          })
+          }),
         )
         .onConflict((oc) => {
           return oc

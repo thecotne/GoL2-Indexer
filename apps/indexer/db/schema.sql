@@ -155,7 +155,7 @@ CREATE VIEW public.game_state AS
     r."revivedCellOwners"
    FROM (public.event e
      LEFT JOIN public.game_revived_cells r ON ((((e."gameId")::text = '0x7300100008000000000000000000000000'::text) AND ((e."networkName")::text = (r."networkName")::text) AND ((e."contractAddress")::text = (r."contractAddress")::text) AND (e."gameGeneration" = r."gameGeneration"))))
-  WHERE ((e."eventName")::text = ANY ((ARRAY['GameCreated'::character varying, 'GameEvolved'::character varying])::text[]))
+  WHERE ((e."eventName")::text = ANY (ARRAY[('GameCreated'::character varying)::text, ('GameEvolved'::character varying)::text]))
   ORDER BY e."blockIndex" DESC, e."transactionIndex" DESC, e."eventIndex" DESC;
 
 
@@ -210,7 +210,7 @@ CREATE VIEW public.game_event AS
     "revivedCellIndex",
     "gameOver"
    FROM public.event e
-  WHERE (("eventName")::text = ANY ((ARRAY['GameCreated'::character varying, 'GameEvolved'::character varying, 'CellRevived'::character varying])::text[]))
+  WHERE (("eventName")::text = ANY (ARRAY[('GameCreated'::character varying)::text, ('GameEvolved'::character varying)::text, ('CellRevived'::character varying)::text]))
   ORDER BY "blockIndex" DESC, "transactionIndex" DESC, "eventIndex" DESC;
 
 

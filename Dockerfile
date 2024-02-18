@@ -1,22 +1,28 @@
-# prepare base image
 FROM node:20.11.0-alpine as base
-WORKDIR /app
 
-# prepare /app/node_modules
-FROM base as prod
-COPY package.json pnpm-lock.yaml ./
-RUN corepack enable && pnpm install --prod
+FROM base as src
+WORKDIR /src
 
-# prepare /app/dist
-FROM prod as build
-RUN pnpm install
-COPY src ./src/
-COPY tsconfig.json ./
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/indexer/package.json ./apps/indexer/
+
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+
+COPY apps/indexer/src ./apps/indexer/src/
+COPY apps/indexer/tsconfig.json ./apps/indexer/
+
 RUN pnpm build
+RUN pnpm deploy --filter=./apps/indexer --prod /app
 
 # build final image
 FROM base as app
-COPY --from=prod /app/node_modules ./node_modules/
-COPY --from=build /app/dist ./dist/
-COPY db ./db/
+WORKDIR /app
+
+COPY --from=src /app ./
+COPY apps/indexer/db ./db/
+
 CMD ["/bin/sh", "-c", "./node_modules/.bin/dbmate wait && ./node_modules/.bin/dbmate up && ./dist/index.mjs"]

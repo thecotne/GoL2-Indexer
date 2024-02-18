@@ -1,0 +1,36 @@
+{
+  "private": true,
+  "type": "module",
+  "name": "gol2-indexer",
+  "version": "0.0.0-source",
+  "bin": "./dist/index.mjs",
+  "license": "UNLICENSED",
+  "files": [],
+  "scripts": {
+    "kanel": "kanel -c ./.kanelrc.cjs",
+    "build": "pkgroll",
+    "dev": "tsx --watch src/index.ts",
+    "debug": "LOG_LEVEL=debug pnpm dev",
+    "test": "tsc",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "dbmate": "^2.12.0",
+    "dotenv": "^16.4.4",
+    "kysely": "^0.27.2",
+    "pg": "^8.11.3",
+    "starknet": "^5.29.0",
+    "winston": "^3.11.0",
+    "znv": "^0.4.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.19",
+    "@types/pg": "^8.11.0",
+    "kanel": "^3.8.7",
+    "kanel-kysely": "^0.3.3",
+    "pkgroll": "^2.0.1",
+    "tsx": "^4.7.1",
+    "typescript": "^5.3.3"
+  }
+}

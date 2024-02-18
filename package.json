@@ -1,38 +1,25 @@
 {
   "private": true,
   "type": "module",
-  "name": "gol2-indexer",
+  "name": "gol2-indexer-root",
   "version": "0.0.0-source",
-  "bin": "./dist/index.mjs",
   "license": "UNLICENSED",
   "files": [],
   "scripts": {
-    "build": "pkgroll",
-    "dev": "tsx --watch src/index.ts",
-    "debug": "LOG_LEVEL=debug pnpm dev",
-    "clean": "rm -rf dist",
-    "update-db-types": "kanel -c ./.kanelrc.cjs"
-  },
-  "dependencies": {
-    "dbmate": "^2.11.0",
-    "dotenv": "^16.3.2",
-    "kysely": "^0.27.2",
-    "pg": "^8.11.3",
-    "starknet": "^5.29.0",
-    "winston": "^3.11.0",
-    "znv": "^0.4.0",
-    "zod": "^3.22.4"
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "dev": "pnpm -F ./apps/indexer dev",
+    "debug": "pnpm -F ./apps/indexer debug",
+    "clean": "pnpm -F ./apps/indexer clean",
+    "kanel": "pnpm -F ./apps/indexer kanel",
+    "pgcli": "dotenv -- pnpm -c exec 'pgcli \"$DATABASE_URL\"'",
+    "check": "biome check .",
+    "fix": "biome check . --apply"
   },
   "devDependencies": {
     "@biomejs/biome": "1.5.3",
-    "@types/node": "^20.11.5",
-    "@types/pg": "^8.10.9",
-    "dotenv-cli": "^7.3.0",
-    "kanel": "^3.8.2",
-    "kanel-kysely": "^0.3.2",
-    "pkgroll": "^2.0.1",
-    "tsx": "^4.7.0",
-    "typescript": "^5.3.3"
+    "dbmate": "^2.12.0",
+    "dotenv-cli": "^7.3.0"
   },
-  "packageManager": "pnpm@8.14.1+sha256.2df78e65d433d7693b9d3fbdaf431b2d96bb4f96a2ffecd51a50efe16e50a6a8"
+  "packageManager": "pnpm@8.15.3+sha256.fc4a49bd609550a41e14d20efbce802a4b892aa4cac877322de2f0924f122991"
 }
