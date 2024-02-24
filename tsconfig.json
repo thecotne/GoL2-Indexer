@@ -1,0 +1,6 @@
+{
+  "references": [
+    { "path": "./apps/indexer/tsconfig.json" },
+    { "path": "./apps/web/tsconfig.json" }
+  ]
+}
