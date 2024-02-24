@@ -4,6 +4,7 @@
   "sideEffects": false,
   "type": "module",
   "scripts": {
+    "kanel": "kanel -c ./.kanelrc.cjs",
     "build": "remix vite:build",
     "dev": "remix vite:dev",
     "lint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint .",
@@ -11,25 +12,34 @@
     "typecheck": "tsc"
   },
   "dependencies": {
-    "@remix-run/node": "2.7.0-pre.1",
-    "@remix-run/react": "2.7.0-pre.1",
-    "@remix-run/serve": "2.7.0-pre.1",
+    "@remix-run/node": "^2.7.2",
+    "@remix-run/react": "^2.7.2",
+    "@remix-run/serve": "^2.7.2",
     "isbot": "^4.1.0",
+    "kysely": "^0.27.2",
+    "pg": "^8.11.3",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "starknet": "^5.29.0",
+    "winston": "^3.11.0",
+    "znv": "^0.4.0",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@remix-run/dev": "2.7.0-pre.1",
+    "@remix-run/dev": "^2.7.2",
+    "@types/pg": "^8.11.0",
     "@types/react": "^18.2.20",
     "@types/react-dom": "^18.2.7",
     "@typescript-eslint/eslint-plugin": "^6.7.4",
+    "dotenv": "^16.4.4",
     "eslint": "^8.38.0",
-    "eslint-config-prettier": "^9.0.0",
     "eslint-import-resolver-typescript": "^3.6.1",
     "eslint-plugin-import": "^2.28.1",
     "eslint-plugin-jsx-a11y": "^6.7.1",
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
+    "kanel": "^3.8.7",
+    "kanel-kysely": "^0.3.3",
     "typescript": "^5.1.6",
     "vite": "^5.1.0",
     "vite-tsconfig-paths": "^4.2.1"
