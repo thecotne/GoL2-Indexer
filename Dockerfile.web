@@ -1,0 +1,30 @@
+FROM node:20.11.0-alpine as base
+
+FROM base as src
+WORKDIR /src
+
+RUN corepack enable
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/web/package.json ./apps/web/
+
+RUN pnpm install --frozen-lockfile
+
+COPY apps/web/public ./apps/web/public/
+COPY apps/web/app ./apps/web/app/
+COPY apps/web/postcss.config.js ./apps/web/
+COPY apps/web/tailwind.config.js ./apps/web/
+COPY apps/web/tsconfig.json ./apps/web/
+COPY apps/web/vite.config.ts ./apps/web/
+
+RUN pnpm run --filter=./apps/web build
+RUN pnpm deploy --filter=./apps/web --prod /app
+
+FROM base as app
+WORKDIR /app
+
+COPY --from=src /app ./
+
+EXPOSE 3000
+
+CMD ["./node_modules/.bin/remix-serve ./build/server/index.js"]

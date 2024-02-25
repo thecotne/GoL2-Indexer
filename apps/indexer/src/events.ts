@@ -11,7 +11,7 @@ import {
   num,
   uint256,
 } from "starknet";
-import { db, log, starknet, starknetMainnet } from "./env";
+import { db, env, log, starknet, starknetMainnet } from "./env";
 import {
   EventContractAddress,
   EventEventIndex,
@@ -364,7 +364,9 @@ export async function pullEvents(
 
       log.info("Inserted events.", { events: eventsChunk.events.length });
 
-      // await new Promise((resolve) => setTimeout(resolve, 3000));
+      if (env.INDEXER_DELAY > 0) {
+        await new Promise((resolve) => setTimeout(resolve, env.INDEXER_DELAY));
+      }
     }
   } while (eventsChunk.continuation_token);
 }

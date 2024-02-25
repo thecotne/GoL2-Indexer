@@ -12,9 +12,24 @@ services:
     ports:
       - "5432:5432"
   indexer:
-    build: .
+    image: "gol2-indexer"
+    build:
+      context: .
+      dockerfile: Dockerfile.indexer
     depends_on:
       - db
     env_file:
       - .env
       - .env.docker
+  web:
+    image: "gol2-web"
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    depends_on:
+      - db
+    env_file:
+      - .env
+      - .env.docker
+    ports:
+      - "3000:3000"

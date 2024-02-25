@@ -3,6 +3,9 @@
   "private": true,
   "sideEffects": false,
   "type": "module",
+  "files": [
+    "build"
+  ],
   "scripts": {
     "kanel": "kanel -c ./.kanelrc.cjs",
     "build": "remix vite:build",

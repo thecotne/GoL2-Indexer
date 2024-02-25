@@ -6,7 +6,7 @@ import { parseEnv } from "znv";
 import { z } from "zod";
 import PublicSchema from "./schemas/Database";
 
-if (process.env.NODE_ENV !== "production") {
+if (import.meta.env.DEV) {
   const dotenv = await import("dotenv");
   const path = await import("path");
 
@@ -15,8 +15,9 @@ if (process.env.NODE_ENV !== "production") {
 
 export const env = parseEnv(process.env, {
   DATABASE_URL: z.string(),
-  INFURA_API_KEY: z.string().nullable(),
   INDEXER_CONFIG: z.string(),
+  INDEXER_DELAY: z.number().default(3000),
+  INFURA_API_KEY: z.string().nullable(),
   LOG_LEVEL: z
     .enum(["trace", "debug", "info", "warn", "error", "fatal"])
     .default("info"),

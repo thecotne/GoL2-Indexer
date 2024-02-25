@@ -1,4 +1,4 @@
-import { contracts, log } from "./env";
+import { contracts, env, log } from "./env";
 import { pullEvents } from "./events";
 
 void main();
@@ -20,7 +20,9 @@ async function main() {
         await pullEvents(contractAddress, blockNumber, networkName);
       }
 
-      // await new Promise((resolve) => setTimeout(resolve, 3000));
+      if (env.INDEXER_DELAY > 0) {
+        await new Promise((resolve) => setTimeout(resolve, env.INDEXER_DELAY));
+      }
     }
   } catch (e) {
     log.error("App failed.", e);

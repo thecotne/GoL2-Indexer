@@ -6,13 +6,6 @@
   "license": "UNLICENSED",
   "files": [],
   "scripts": {
-    "build": "pnpm -r build",
-    "test": "pnpm -r test",
-    "lint": "pnpm -r lint",
-    "dev": "pnpm -r dev",
-    "debug": "pnpm -r debug",
-    "clean": "pnpm -r clean",
-    "kanel": "pnpm -r kanel",
     "pgcli": "dotenv -- pnpm -c exec 'pgcli \"$DATABASE_URL\"'",
     "check": "biome check .",
     "fix": "biome check . --apply"
