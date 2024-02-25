@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "dbmate": "^2.12.0",
-    "dotenv": "^16.4.4",
+    "dotenv": "^16.4.5",
     "kysely": "^0.27.2",
     "pg": "^8.11.3",
     "starknet": "^5.29.0",
@@ -25,9 +25,9 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@types/node": "^20.11.19",
-    "@types/pg": "^8.11.0",
-    "kanel": "^3.8.7",
+    "@types/node": "^20.11.20",
+    "@types/pg": "^8.11.1",
+    "kanel": "^3.8.8",
     "kanel-kysely": "^0.3.3",
     "pkgroll": "^2.0.1",
     "tsx": "^4.7.1",
