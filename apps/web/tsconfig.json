@@ -1,6 +1,9 @@
 {
-  "include": ["env.d.ts", "**/*.ts", "**/*.tsx"],
+  "extends": "../../tsconfig.projects.json",
+  "include": ["env.d.ts", "app", "vite.config.ts", "package.json"],
+  "exclude": ["node_modules", ".types"],
   "compilerOptions": {
+    "outDir": ".types",
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
     "isolatedModules": true,
     "esModuleInterop": true,
@@ -16,9 +19,6 @@
     "baseUrl": ".",
     "paths": {
       "~/*": ["./app/*"]
-    },
-
-    // Vite takes care of building everything, not tsc.
-    "noEmit": true
+    }
   }
 }

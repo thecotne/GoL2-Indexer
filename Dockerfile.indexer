@@ -1,25 +1,32 @@
-FROM node:20.11.0-alpine as base
+FROM alpine:latest as node
+RUN apk add nodejs
 
-FROM base as src
+FROM node as src
 WORKDIR /src
 
+ENV CI=true
+
+RUN apk add npm
+RUN npm install -g corepack
 RUN corepack enable
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/indexer/package.json ./apps/indexer/
 
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 COPY apps/indexer/src ./apps/indexer/src/
 COPY apps/indexer/tsconfig.json ./apps/indexer/
+COPY tsconfig.options.json tsconfig.projects.json ./
 
 RUN pnpm run --filter=./apps/indexer build
 RUN pnpm deploy --filter=./apps/indexer --prod /app
 
-FROM base as app
+FROM node as app
 WORKDIR /app
 
-COPY --from=src /app ./
-COPY apps/indexer/db ./db/
+COPY --from=src /app/package.json ./
+COPY --from=src /app/dist ./dist
+COPY --from=src /app/node_modules ./node_modules
 
-CMD ["/bin/sh", "-c", "./node_modules/.bin/dbmate wait && ./node_modules/.bin/dbmate up && ./dist/index.mjs"]
+CMD ["./dist/index.mjs"]

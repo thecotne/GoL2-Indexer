@@ -5,17 +5,18 @@
 - `source ./setup-install.sh` - install nvm, node and pnpm.
 - `source ./setup-update.sh` - install up-to-date versions of nvm, node and pnpm.
 - `pnpm dbmate up` - create the database and run migrations
-- `pnpm -r build` - build all the projects
 - `pnpm -r kanel` - generate types from the database for all the projects
+- `pnpm -r build` - build all the projects
 - `pnpm -r dev` - start all the projects
 - `pnpm -r debug` - start all the projects with debug logs
-- `pnpm -r clean` - remove `dist` for all the projects
+- `pnpm -r prod` - start all the projects in production mode
 
 ### Docker Compose commands
 
 - `docker compose build` - build the project with docker
   - `docker compose build indexer` - build the indexer with docker
   - `docker compose build web` - build the web with docker
+  - `docker compose build migrations` - build the migrations with docker
 - `docker compose up` - start the project with docker
   - `docker compose up -d` - start the project with docker in detached mode
   - `docker compose up db -d` - start the database with docker
@@ -34,17 +35,15 @@
 - `pnpm -F ./apps/indexer build` - build the project
 - `pnpm -F ./apps/indexer dev` - start the project
 - `pnpm -F ./apps/indexer debug` - start the project with debug logs
-- `pnpm -F ./apps/indexer test` - check the code
-- `pnpm -F ./apps/indexer clean` - remove `dist`
+- `pnpm -F ./apps/indexer prod` - start the project in production mode
 
 ### Scripts defined in `apps/web/package.json`
 
 - `pnpm -F ./apps/web kanel` - generate types from the database
 - `pnpm -F ./apps/web build` - build the project
 - `pnpm -F ./apps/web dev` - start the project
-- `pnpm -F ./apps/web lint` - check the code
-- `pnpm -F ./apps/web start` - start the project
-- `pnpm -F ./apps/web test` - check the code
+- `pnpm -F ./apps/web debug` - start the project with debug logs
+- `pnpm -F ./apps/web prod` - start the project in production mode
 
 ## Env variables
 

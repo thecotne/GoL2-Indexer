@@ -13,7 +13,15 @@ if (process.env.NODE_ENV !== "production") {
   dotenv.config({ path: path.resolve(process.cwd(), "../../.env") });
 }
 
-export const env = parseEnv(process.env, {
+export interface ENV {
+  readonly DATABASE_URL: string;
+  readonly INDEXER_CONFIG: string;
+  readonly INDEXER_DELAY: number;
+  readonly INFURA_API_KEY: string | null;
+  readonly LOG_LEVEL: "trace" | "debug" | "info" | "warn" | "error" | "fatal";
+}
+
+export const env: ENV = parseEnv(process.env, {
   DATABASE_URL: z.string(),
   INDEXER_CONFIG: z.string(),
   INDEXER_DELAY: z.number().default(3000),

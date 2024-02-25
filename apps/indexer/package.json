@@ -5,17 +5,17 @@
   "version": "0.0.0-source",
   "bin": "./dist/index.mjs",
   "license": "UNLICENSED",
-  "files": [],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "kanel": "kanel -c ./.kanelrc.cjs",
     "build": "pkgroll",
     "dev": "tsx --watch src/index.ts",
     "debug": "LOG_LEVEL=debug pnpm dev",
-    "test": "tsc",
-    "clean": "rm -rf dist"
+    "prod": "./dist/index.mjs"
   },
   "dependencies": {
-    "dbmate": "^2.12.0",
     "dotenv": "^16.4.5",
     "kysely": "^0.27.2",
     "pg": "^8.11.3",

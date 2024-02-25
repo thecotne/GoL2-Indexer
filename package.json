@@ -7,13 +7,19 @@
   "files": [],
   "scripts": {
     "pgcli": "dotenv -- pnpm -c exec 'pgcli \"$DATABASE_URL\"'",
-    "check": "biome check .",
-    "fix": "biome check . --apply"
+    "check": "pnpm --color /^check:.*/",
+    "check:biome": "biome check .",
+    "check:tsc": "tsc --build",
+    "check:recursive": "pnpm  --color --recursive /^check:.*/",
+    "fix": "pnpm --color /^fix:.*/",
+    "fix:biome": "biome check . --apply",
+    "fix:recursive": "pnpm --color --recursive /^fix:.*/"
   },
   "devDependencies": {
     "@biomejs/biome": "1.5.3",
     "dbmate": "^2.12.0",
-    "dotenv-cli": "^7.3.0"
+    "dotenv-cli": "^7.3.0",
+    "typescript": "^5.3.3"
   },
   "packageManager": "pnpm@8.15.4+sha256.cea6d0bdf2de3a0549582da3983c70c92ffc577ff4410cbf190817ddc35137c2"
 }

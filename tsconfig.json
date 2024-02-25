@@ -1,6 +1,5 @@
 {
-  "references": [
-    { "path": "./apps/indexer/tsconfig.json" },
-    { "path": "./apps/web/tsconfig.json" }
-  ]
+  "extends": "./tsconfig.options.json",
+  "include": [],
+  "references": [{ "path": "./apps/indexer" }, { "path": "./apps/web" }]
 }
