@@ -57,10 +57,10 @@
     - `CONTRACT_BLOCK_NUMBER` - The block number at which the contract was deployed
     - `CONTRACT_ADDRESS` - The contract address
   - Example:
-    - `SN_GOERLI 942318 0x5bd17bba6b3cb9740bcc0f20f93ecf443250c4f09d94e4ab32d3bdffc7ebba2`
-    - `SN_MAIN 526494 0x79294c688eb80e025f298b1ab2d30dd7a4a316ed592ac2fc124710564e4e911`
+    - `SN_GOERLI 942318 0x05bd17bba6b3cb9740bcc0f20f93ecf443250c4f09d94e4ab32d3bdffc7ebba2`
+    - `SN_MAIN 526494 0x079294c688eb80e025f298b1ab2d30dd7a4a316ed592ac2fc124710564e4e911`
     - `SN_GOERLI 267275 0x06dc4bd1212e67fd05b456a34b24a060c45aad08ab95843c42af31f86c7bd093`
-    - `SN_MAIN 4982 0x6a05844a03bb9e744479e3298f54705a35966ab04140d3d8dd797c1f6dc49d0`
+    - `SN_MAIN 4982 0x06a05844a03bb9e744479e3298f54705a35966ab04140d3d8dd797c1f6dc49d0`
 
 ### Optional Env Variables
 
