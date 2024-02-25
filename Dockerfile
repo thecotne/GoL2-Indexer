@@ -1,25 +1,30 @@
-FROM alpine:latest as node
+# Base Image
+FROM alpine:3.18 as base
+WORKDIR /app
+
+# Node Image
+FROM base as node
 RUN apk add nodejs
 
+# pnpm Image
 FROM node as pnpm
 WORKDIR /src
-
-ENV CI=true
-
-RUN apk add npm
-RUN npm install -g corepack
-RUN corepack enable
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/web/package.json ./apps/web/
 COPY apps/indexer/package.json ./apps/indexer/
 
-RUN pnpm install
+ENV CI=true
 
-############################################################
-##################### Gol2 Web App #########################
-############################################################
+RUN <<EOF
+  set -e
+  apk add npm
+  npm install -g corepack
+  corepack enable
+  pnpm install
+EOF
 
+# Build Gol2 Web Server
 FROM pnpm as build-web
 
 COPY apps/web/public ./apps/web/public/
@@ -30,58 +35,52 @@ COPY apps/web/tsconfig.json ./apps/web/
 COPY apps/web/vite.config.ts ./apps/web/
 COPY tsconfig.options.json tsconfig.projects.json ./
 
-RUN pnpm run --filter=./apps/web build
-RUN pnpm deploy --filter=./apps/web --prod /app
+RUN <<EOF
+  set -e
+  pnpm run --filter=./apps/web build
+  pnpm deploy --filter=./apps/web --prod /app
+EOF
 
+# Gol2 Web Server TARGET Image
 FROM node as web
-WORKDIR /app
 
-COPY --from=build-web /app/package.json ./
-COPY --from=build-web /app/build ./build
-COPY --from=build-web /app/node_modules ./node_modules
-
-EXPOSE 3000
+COPY --from=build-web /app ./
 
 CMD ["./node_modules/.bin/remix-serve", "./build/server/index.js"]
+EXPOSE 3000
 
-
-############################################################
-##################### Gol2 Indexer #########################
-############################################################
-
+# Build Gol2 Indexer
 FROM pnpm as build-indexer
 
 COPY apps/indexer/src ./apps/indexer/src/
 COPY apps/indexer/tsconfig.json ./apps/indexer/
 COPY tsconfig.options.json tsconfig.projects.json ./
 
-RUN pnpm run --filter=./apps/indexer build
-RUN pnpm deploy --filter=./apps/indexer --prod /app
+RUN <<EOF
+  set -e
+  pnpm run --filter=./apps/indexer build
+  pnpm deploy --filter=./apps/indexer --prod /app
+EOF
 
+# Gol2 Indexer TARGET Image
 FROM node as indexer
-WORKDIR /app
 
-COPY --from=build-indexer /app/package.json ./
-COPY --from=build-indexer /app/dist ./dist
-COPY --from=build-indexer /app/node_modules ./node_modules
+COPY --from=build-indexer /app ./
 
 CMD ["./dist/index.mjs"]
 
-############################################################
-##################### Gol2 Migrations ######################
-############################################################
-
+# dbmate Image
 FROM ghcr.io/amacneil/dbmate as dbmate
 
-FROM alpine:latest as migrations
+# Gol2 Migrations TARGET Image
+FROM base as migrations
 
 RUN apk add --no-cache postgresql-client tzdata
 
 COPY --from=dbmate /usr/local/bin/dbmate /usr/local/bin/dbmate
-
-WORKDIR /app
 COPY db ./db/
 
 ENV DBMATE_NO_DUMP_SCHEMA=true
+
 ENTRYPOINT ["/usr/local/bin/dbmate"]
 CMD ["--wait", "up"]
