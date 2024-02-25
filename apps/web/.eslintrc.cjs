@@ -47,6 +47,9 @@ module.exports = {
           typescript: {},
         },
       },
+      rules: {
+        "react/prop-types": "off",
+      },
     },
 
     // Typescript
@@ -62,7 +65,7 @@ module.exports = {
           },
           typescript: {
             alwaysTryTypes: true,
-            project: ["./tsconfig.json", "./apps/*/tsconfig.json"]
+            project: ["./tsconfig.json", "./apps/*/tsconfig.json"],
           },
         },
       },

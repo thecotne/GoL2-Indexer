@@ -76,10 +76,13 @@ export const log = createLogger({
     }),
     format.errors({ stack: true }),
     format.splat(),
-    format.printf(
-      ({ timestamp, level, message, ...obj }) =>
-        `${timestamp} ${level}: ${message} ${JSON.stringify(obj, null, 2)}`
-    )
+    format.printf(({ timestamp, level, message, ...obj }) => {
+      return [
+        `${timestamp} ${level}:`,
+        message,
+        JSON.stringify(obj, null, 2),
+      ].join(" ");
+    }),
   ),
   transports: [new transports.Console()],
 });

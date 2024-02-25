@@ -1,59 +1,257 @@
-import type { MetaFunction } from "@remix-run/node";
+import type { MetaFunction, SerializeFrom } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
-import { db } from "~/env.server";
+import { Jsonify } from "@remix-run/server-runtime/dist/jsonify";
+import {
+  CellContext,
+  ColumnDef,
+  getCoreRowModel,
+  getFacetedRowModel,
+  getFacetedUniqueValues,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+import React from "react";
+import { DataTable } from "~/components/data-table/data-table";
+import { DataTableColumnHeader } from "~/components/data-table/data-table-column-header";
+import { DataTableSearchableColumn } from "~/components/data-table/types";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
+import { contracts, db } from "~/env.server";
+import { Event } from "~/schemas/public/Event";
 
 export const meta: MetaFunction = () => {
   return [
-    { title: "New Remix App" },
-    { name: "description", content: "Welcome to Remix!" },
+    { title: "GoL2" },
+    { name: "description", content: "Game of Life 2" },
   ];
 };
 
-// event object
-// {
-//   "networkName": "SN_GOERLI",
-//   "contractAddress": "0x5bd17bba6b3cb9740bcc0f20f93ecf443250c4f09d94e4ab32d3bdffc7ebba2",
-//   "blockHash": "0x1bb6260dd10cef326f4d89ca224a6b0417f56c32fedfc91367bdb4c8d1a0599",
-//   "blockIndex": 942318,
-//   "transactionHash": "0xd3f38e72174f184f674b0c66b8456961093ad3f9fffde7e183f6ee4451e889",
-//   "transactionIndex": 0,
-//   "eventIndex": 0,
-//   "eventName": "Upgraded",
-//   "eventData": {
-//     "implementation": "1918811272952760915684883876778035902426841049697495639193257066828996839392"
-//   },
-//   "createdAt": "2024-02-16T12:25:24.304Z",
-//   "updatedAt": "2024-02-16T12:25:24.304Z",
-//   "transferFrom": null,
-//   "transferTo": null,
-//   "transferAmount": null,
-//   "transactionOwner": null,
-//   "transactionStatus": "ACCEPTED_ON_L2",
-//   "gameId": null,
-//   "gameGeneration": null,
-//   "gameState": null,
-//   "revivedCellIndex": null,
-//   "gameOver": null
-// },
+function LongTextCell(props: CellContext<SerializeFrom<Event>, unknown>) {
+  const value = props.cell.getValue();
+
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  if (value.length < 10) {
+    return value;
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger>
+        {value.slice(0, 6)}...{value.slice(-4)}
+      </TooltipTrigger>
+      <TooltipContent>{value}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function JSONCell(props: CellContext<SerializeFrom<Event>, unknown>) {
+  const value = props.cell.getValue();
+
+  if (typeof value !== "object") {
+    return value;
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger>{JSON.stringify(value).slice(0, 6)}...</TooltipTrigger>
+      <TooltipContent>
+        <pre>{JSON.stringify(value, null, 2)}</pre>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+export const columns = [
+  {
+    meta: { title: "Network" },
+    accessorKey: "networkName",
+  },
+  {
+    meta: { title: "Contract Address" },
+    accessorKey: "contractAddress",
+    cell: LongTextCell,
+  },
+  {
+    meta: { title: "Block Hash" },
+    accessorKey: "blockHash",
+    cell: LongTextCell,
+  },
+  {
+    meta: { title: "Block Index" },
+    accessorKey: "blockIndex",
+  },
+  {
+    meta: { title: "Transaction Hash" },
+    accessorKey: "transactionHash",
+    cell: LongTextCell,
+  },
+  {
+    meta: { title: "Transaction Index" },
+    accessorKey: "transactionIndex",
+  },
+  {
+    meta: { title: "Event Index" },
+    accessorKey: "eventIndex",
+  },
+  {
+    meta: { title: "Event Name" },
+    accessorKey: "eventName",
+  },
+  {
+    meta: { title: "Event Data" },
+    accessorKey: "eventData",
+    cell: JSONCell,
+  },
+  {
+    meta: { title: "Created At" },
+    accessorKey: "createdAt",
+  },
+  {
+    meta: { title: "Updated At" },
+    accessorKey: "updatedAt",
+  },
+  {
+    meta: { title: "Transfer From" },
+    accessorKey: "transferFrom",
+    cell: LongTextCell,
+  },
+  {
+    meta: { title: "Transfer To" },
+    accessorKey: "transferTo",
+    cell: LongTextCell,
+  },
+  {
+    meta: { title: "Transfer Amount" },
+    accessorKey: "transferAmount",
+  },
+  {
+    meta: { title: "Transaction Owner" },
+    accessorKey: "transactionOwner",
+    cell: LongTextCell,
+  },
+  {
+    meta: { title: "Transaction Status" },
+    accessorKey: "transactionStatus",
+    enableSorting: true,
+  },
+  {
+    meta: { title: "Game ID" },
+    accessorKey: "gameId",
+  },
+  {
+    meta: { title: "Game Generation" },
+    accessorKey: "gameGeneration",
+  },
+  {
+    meta: { title: "Game State" },
+    accessorKey: "gameState",
+  },
+  {
+    meta: { title: "Revived Cell Index" },
+    accessorKey: "revivedCellIndex",
+  },
+  {
+    meta: { title: "Game Over" },
+    accessorKey: "gameOver",
+  },
+] as const satisfies ColumnDef<Jsonify<Event>>[];
 
 export async function loader() {
   const events = await db.selectFrom("event").selectAll().limit(50).execute();
+  const filterableColumns = [
+    {
+      id: "networkName",
+      title: "Network",
+      options: [
+        { label: "SN_GOERLI", value: "SN_GOERLI" },
+        { label: "SN_MAINNET", value: "SN_MAINNET" },
+      ],
+    },
+    {
+      id: "contractAddress",
+      title: "Contract Address",
+      options: contracts.map((contract) => ({
+        label: `${contract.contractAddress.slice(
+          0,
+          6,
+        )}...${contract.contractAddress.slice(-4)}`,
+        value: contract.contractAddress,
+      })),
+    },
+    {
+      id: "transactionStatus",
+      title: "Transaction Status",
+      options: [
+        { label: "PENDING", value: "PENDING" },
+        { label: "ACCEPTED_ON_L2", value: "ACCEPTED_ON_L2" },
+      ],
+    },
+  ] as const;
 
   return json({
-    events: events.map((event) => ({
-      ...event,
-      id: event.transactionHash + event.eventIndex,
-    })),
+    events,
+    filterableColumns,
   });
 }
 
 export default function Index() {
-  const data = useLoaderData<typeof loader>();
+  const { events, filterableColumns } = useLoaderData<typeof loader>();
+  const searchableColumns: DataTableSearchableColumn<Jsonify<Event>>[] = [];
+  const [tableState, setTableState] = React.useState({});
+
+  const table = useReactTable({
+    data: events,
+    columns,
+    defaultColumn: {
+      sortUndefined: -1,
+      filterFn: "arrIncludesSome",
+      meta: {},
+      header: (headerContext) => {
+        const { title } = headerContext.column.columnDef.meta as {
+          title?: string;
+        };
+
+        return (
+          <DataTableColumnHeader
+            column={headerContext.column}
+            title={title ?? headerContext.column.id}
+          />
+        );
+      },
+    },
+    enableRowSelection: true,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFacetedRowModel: getFacetedRowModel(),
+    getFacetedUniqueValues: getFacetedUniqueValues(),
+    onStateChange(updater) {
+      setTableState(updater);
+    },
+    state: tableState,
+    manualPagination: true,
+  });
 
   return (
-    <div style={{ fontFamily: "system-ui, sans-serif", lineHeight: "1.8" }}>
-      <pre>{JSON.stringify(data, null, 2)}</pre>
+    <div className="p-4">
+      <DataTable
+        table={table}
+        columns={columns}
+        searchableColumns={searchableColumns}
+        filterableColumns={filterableColumns}
+        // floatingBarContent={TasksTableFloatingBarContent(table)}
+        // deleteRowsAction={(event) => deleteSelectedRows({ table, event })}
+      />
     </div>
   );
 }

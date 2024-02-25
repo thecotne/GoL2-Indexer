@@ -1,7 +1,7 @@
 {
   "$schema": "https://biomejs.dev/schemas/1.5.1/schema.json",
   "files": {
-    "ignore": ["src/schemas"]
+    "ignore": ["apps/web/app/schemas", "apps/indexer/src/schemas"]
   },
   "organizeImports": {
     "enabled": true
@@ -13,7 +13,10 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true
+      "recommended": true,
+      "suspicious": {
+        "noArrayIndexKey": "warn"
+      }
     }
   },
   "vcs": {
