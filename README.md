@@ -87,20 +87,20 @@
 - [Pgcli](https://www.pgcli.com/) - A command line interface for Postgres with auto-completion and syntax highlighting.
 - [pkgroll](https://github.com/privatenumber/pkgroll) - Next-gen package bundler for TypeScript & ESM.
 - [pnpm](https://pnpm.io/) - Fast, disk space efficient package manager.
+- [PostCSS](https://postcss.org/) - A tool for transforming CSS with JavaScript plugins.
 - [PostgreSQL](https://www.postgresql.org/) - The world's most advanced open source database.
+- [react](https://react.dev/) - A JavaScript library for building user interfaces.
+- [remix-run](https://remix.run/) - The full-stack web framework for the modern web.
+- [shadcn-ui](https://ui.shadcn.com/) - Beautifully designed components that you can copy and paste into your apps.
 - [Starknet.js](https://www.starknetjs.com/) - JavaScript library for Starknet
+- [Tailwind CSS](https://tailwindcss.com/) - A utility-first CSS framework for rapid UI development.
+- [TanStack Table](https://tanstack.com/table/latest) - Headless UI for building powerful tables & datagrids.
 - [tsx](https://github.com/privatenumber/tsx) - TypeScript Execute: Node.js enhanced to run TypeScript & ESM
 - [TypeScript](https://www.typescriptlang.org/) - Typed JavaScript at Any Scale.
+- [Vite](https://vitejs.dev/) - Next generation frontend tooling. It's fast!
 - [winston](https://github.com/winstonjs/winston) - A logger for just about everything.
 - [znv](https://github.com/lostfictions/znv) - Type-safe environment parsing and validation for Node.js with Zod schemas.
 - [Zod](https://zod.dev/) - TypeScript-first schema validation with static type inference.
-- [react](https://react.dev/) - A JavaScript library for building user interfaces.
-- [remix-run](https://remix.run/) - The full-stack web framework for the modern web.
-- [Vite](https://vitejs.dev/) - Next generation frontend tooling. It's fast!
-- [Tailwind CSS](https://tailwindcss.com/) - A utility-first CSS framework for rapid UI development.
-- [PostCSS](https://postcss.org/) - A tool for transforming CSS with JavaScript plugins.
-- [tanstack/react-table](https://tanstack.com/table/latest) - Headless UI for building powerful tables & datagrids.
-- [shadcn-ui](https://ui.shadcn.com/) - Beautifully designed components that you can copy and paste into your apps.
 
 ## Related projects
 
