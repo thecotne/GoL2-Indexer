@@ -1,4 +1,4 @@
-name: Docker image
+name: Gol2 Web Docker
 
 on:
   workflow_dispatch:
