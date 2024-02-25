@@ -6,14 +6,22 @@
   "license": "UNLICENSED",
   "files": [],
   "scripts": {
+    "build": "pnpm --color --recursive build",
+    "dev": "pnpm --color --recursive dev",
+    "debug": "pnpm --color --recursive debug",
+    "prod": "pnpm --color --recursive prod",
     "pgcli": "dotenv -- pnpm -c exec 'pgcli \"$DATABASE_URL\"'",
     "check": "pnpm --color /^check:.*/",
     "check:biome": "biome check .",
     "check:tsc": "tsc --build",
-    "check:recursive": "pnpm  --color --recursive /^check:.*/",
+    "check:recursive": "pnpm --color --recursive /^check:.*/",
     "fix": "pnpm --color /^fix:.*/",
     "fix:biome": "biome check . --apply",
-    "fix:recursive": "pnpm --color --recursive /^fix:.*/"
+    "fix:recursive": "pnpm --color --recursive /^fix:.*/",
+    "kanel": "pnpm --color --recursive kanel",
+    "apps": "pnpm --color --recursive",
+    "apps:web": "pnpm run --filter=./apps/web",
+    "apps:indexer": "pnpm run --filter=./apps/indexer"
   },
   "devDependencies": {
     "@biomejs/biome": "1.5.3",
