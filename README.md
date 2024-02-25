@@ -2,48 +2,35 @@
 
 ## Quick start
 
-- `source ./setup-install.sh` - install nvm, node and pnpm.
-- `source ./setup-update.sh` - install up-to-date versions of nvm, node and pnpm.
 - `pnpm dbmate up` - create the database and run migrations
-- `pnpm -r kanel` - generate types from the database for all the projects
-- `pnpm -r build` - build all the projects
-- `pnpm -r dev` - start all the projects
-- `pnpm -r debug` - start all the projects with debug logs
-- `pnpm -r prod` - start all the projects in production mode
-
-### Docker Compose commands
-
-- `docker compose build` - build the project with docker
-  - `docker compose build indexer` - build the indexer with docker
-  - `docker compose build web` - build the web with docker
-  - `docker compose build migrations` - build the migrations with docker
-- `docker compose up` - start the project with docker
-  - `docker compose up -d` - start the project with docker in detached mode
-  - `docker compose up db -d` - start the database with docker
-- `dpcker compose rm` - remove the project with docker
-  - `docker compose rm --stop` - stop and remove the project with docker
-
-### Scripts defined in `package.json`
-
+- `pnpm build` - build all the projects
+- `pnpm dev` - start all the projects
+- `pnpm debug` - start all the projects with debug logs
+- `pnpm prod` - start all the projects in production mode
 - `pnpm pgcli` - connect to the database with pgcli
 - `pnpm check` - check the code
 - `pnpm fix` - check and fromat the code
+- `pnpm kanel` - generate types from the database
+- `pnpm apps` - run a script in all the projects (e.g. `pnpm apps build`)
+- `pnpm apps:web` - run a script in the web project (e.g. `pnpm apps:web build`)
+- `pnpm apps:indexer` - run a script in the indexer project (e.g. `pnpm apps:indexer build`)
 
-### Scripts defined in `apps/indexer/package.json`
+### Docker Compose commands
 
-- `pnpm -F ./apps/indexer kanel` - generate types from the database
-- `pnpm -F ./apps/indexer build` - build the project
-- `pnpm -F ./apps/indexer dev` - start the project
-- `pnpm -F ./apps/indexer debug` - start the project with debug logs
-- `pnpm -F ./apps/indexer prod` - start the project in production mode
+- `docker compose build` - build all the images
+  - `docker compose build indexer` - build the indexer image
+  - `docker compose build web` - build the web image
+  - `docker compose build migrations` - build the migrations image
+- `docker compose up` - start all the services
+  - `docker compose up -d` - start all the services in the background
+  - `docker compose up db -d` - start the database in the background
+- `dpcker compose rm` - remove all stopped services
+  - `docker compose rm --stop` - stop and remove all the services
 
-### Scripts defined in `apps/web/package.json`
+### `setup-*.sh` scripts
 
-- `pnpm -F ./apps/web kanel` - generate types from the database
-- `pnpm -F ./apps/web build` - build the project
-- `pnpm -F ./apps/web dev` - start the project
-- `pnpm -F ./apps/web debug` - start the project with debug logs
-- `pnpm -F ./apps/web prod` - start the project in production mode
+- `source ./setup-install.sh` - install nvm, node and pnpm.
+- `source ./setup-update.sh` - install up-to-date versions of nvm, node and pnpm.
 
 ## Env variables
 
