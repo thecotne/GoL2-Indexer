@@ -14,7 +14,8 @@ services:
     image: "gol2-migrations"
     build:
       context: .
-      dockerfile: Dockerfile.migrations
+      dockerfile: Dockerfile
+      target: migrations
     depends_on:
       db:
         condition: service_started
@@ -27,7 +28,8 @@ services:
     image: "gol2-indexer"
     build:
       context: .
-      dockerfile: Dockerfile.indexer
+      dockerfile: Dockerfile
+      target: indexer
     depends_on:
       db:
         condition: service_started
@@ -43,7 +45,8 @@ services:
     image: "gol2-web"
     build:
       context: .
-      dockerfile: Dockerfile.web
+      dockerfile: Dockerfile
+      target: web
     depends_on:
       db:
         condition: service_started
