@@ -16,8 +16,8 @@
     "prod": "./dist/index.mjs"
   },
   "devDependencies": {
-    "@types/node": "^20.11.20",
-    "@types/pg": "^8.11.1",
+    "@types/node": "^20.11.24",
+    "@types/pg": "^8.11.2",
     "kanel": "^3.8.8",
     "kanel-kysely": "^0.3.3",
     "kysely": "^0.27.2",
