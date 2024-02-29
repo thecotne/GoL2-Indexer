@@ -6,13 +6,6 @@ import { parseEnv } from "znv";
 import { z } from "zod";
 import PublicSchema from "./schemas/Database";
 
-if (process.env.NODE_ENV !== "production") {
-  const dotenv = await import("dotenv");
-  const path = await import("path");
-
-  dotenv.config({ path: path.resolve(process.cwd(), "../../.env") });
-}
-
 export interface ENV {
   readonly DATABASE_URL: string;
   readonly INDEXER_CONFIG: string;

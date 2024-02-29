@@ -73,7 +73,6 @@
     "next-themes": "^0.2.1",
     "pg": "^8.11.3",
     "postcss": "^8.4.35",
-    "react": "18.3.0-canary-98b8359f6-20240223",
     "react-day-picker": "^8.10.0",
     "react-dom": "18.3.0-canary-98b8359f6-20240223",
     "react-hook-form": "^7.50.1",
@@ -98,6 +97,7 @@
   "dependencies": {
     "@remix-run/node": "^2.7.2",
     "@remix-run/serve": "^2.7.2",
-    "isbot": "^4.4.0"
+    "isbot": "^4.4.0",
+    "react": "18.3.0-canary-98b8359f6-20240223"
   }
 }
